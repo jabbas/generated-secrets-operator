@@ -7,8 +7,13 @@ version = "0.1.5"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/jabbas/secretspec-operator"
-# Floor imposed by kube 5.x; rust-toolchain.toml pins an exact stable release.
-rust-version = "1.89"
+# The declared floor is the toolchain we build and test with (rust-toolchain.toml,
+# same major.minor). No crate is published, so there are no downstream users on an
+# older Rust to keep working. The MSRV-aware resolver (resolver = "3") keeps
+# Cargo.lock inside this floor: a dependency that needs a newer Rust than this
+# stays held back. This value and the toolchain pin therefore move together
+# (Renovate bumps both in one pull request).
+rust-version = "1.99"
 
 [workspace.dependencies]
 kube = { version = "5.0", default-features = false, features = ["derive"] }

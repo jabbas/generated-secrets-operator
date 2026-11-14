@@ -13,12 +13,24 @@
     "cargo",
     "github-actions",
     "pip_requirements",
+    "rust-toolchain",
     "custom.regex"
   ],
   "pip_requirements": {
     "managerFilePatterns": ["/^\\.github/requirements/[^/]+\\.txt$/"]
   },
   "customManagers": [
+    {
+      "description": "`rust-version = \"X.Y\"` of the workspace Cargo.toml: the minimum Rust version is the toolchain we build with, so it follows rust-toolchain.toml (read by the built-in `rust-toolchain` manager, same `rust` dependency and `rust-version` datasource). The `rust-release-channel` versioning keeps the two-part form: 1.99 becomes 1.100, never 1.100.0. Both are grouped into one PR, see the packageRules.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^Cargo\\.toml$/"],
+      "matchStrings": [
+        "rust-version = \"(?<currentValue>\\d+\\.\\d+)\""
+      ],
+      "depNameTemplate": "rust",
+      "datasourceTemplate": "rust-version",
+      "versioningTemplate": "rust-release-channel"
+    },
     {
       "description": "Release tool versions, pinned next to a `# renovate: datasource=… depName=…` comment (GitHub release binaries: cosign in release.yml, syft, grype, crane in install-release-tools.sh, yq in install-yq.sh). `extractVersion` strips the `v` of tags whose pin has none. The pinned SHA-256 checksums are NOT updated, see the packageRules. (helm and kind are pinned in `with: version:` of setup-helm / kind-action, which the github-actions manager reads itself.)",
       "customType": "regex",
@@ -114,6 +126,16 @@
       "separateMajorMinor": false,
       "semanticCommitType": "chore",
       "semanticCommitScope": "deps"
+    },
+    {
+      "description": "The Rust toolchain: `channel` of rust-toolchain.toml (built-in rust-toolchain manager) and `rust-version` of Cargo.toml (custom manager above) are one dependency `rust`, so every update is ONE pull request that moves both; never a partial update",
+      "matchDepNames": ["rust"],
+      "groupName": "rust toolchain",
+      "semanticCommitType": "build",
+      "semanticCommitScope": "rust",
+      "prBodyNotes": [
+        "A new Rust may add clippy lints; CI runs clippy with `-D warnings`, fix them on this branch before merging. The minimum Rust version of the workspace (`rust-version` in `Cargo.toml`) moves with it."
+      ]
     },
     {
       "description": "rand_core stays on 0.6: tied to ssh-key 0.6 (the version ssh-key 0.6.x uses; the generators take its `CryptoRngCore`, see Cargo.toml). Lift together with ssh-key 0.7, which is also when the RUSTSEC-2026-0387 ignore goes away",

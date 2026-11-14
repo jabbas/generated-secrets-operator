@@ -4,7 +4,11 @@
 
 - Rust toolchain (`rust-toolchain.toml` pins the exact release, currently 1.99.1,
   so CI, the release build and your machine agree; `rustup` installs it on first
-  use. Raise it deliberately, in its own commit.)
+  use. Renovate proposes a new release together with `rust-version` in the
+  workspace `Cargo.toml`, in one pull request; a new Rust may add clippy lints,
+  and CI runs clippy with `-D warnings`, so fix them on that branch before
+  merging. The minimum Rust version of the workspace is that toolchain's
+  `major.minor` (1.99), the one the code is built and tested with.)
 - `cargo-deny` for `cargo deny check`
 - For the server-side tests only: a container runtime — **Docker or Podman** —
   and [kind](https://kind.sigs.k8s.io/) (the CI pins its version in
@@ -722,9 +726,15 @@ comment), it tracks:
 | helm | `version:` of `azure/setup-helm` in both workflows | "ci tooling" | nothing |
 | cargo-deny, cargo-audit | `tool:` of `taiki-e/install-action` in `ci.yml` (`deny`, `audit`) and `release.yml` (`verify`) | "ci tooling" | nothing |
 | kind, kind node images | `version:` of `helm/kind-action`, and the `node_image` matrices of `ci.yml` and the commands in this file | "kind" (one PR) | compares the digests with the release notes of that kind release |
+| Rust toolchain | `channel` of `rust-toolchain.toml` (full version, built-in `rust-toolchain` manager) and `rust-version` of the workspace `Cargo.toml` (`major.minor`, a `customManagers` entry); both read the `rust-version` datasource (`static.rust-lang.org`, no token) | "rust toolchain" (one PR, both files) | **fixes the clippy lints the new Rust adds** (CI runs `-D warnings`) before merging |
 
-Not tracked: `rust-toolchain.toml` (raised deliberately, in its own commit), a
-new Kubernetes minor in the test matrix (Renovate moves only the patch of a
+The two Rust pins are one dependency (`rust`) in one group, so Renovate never
+moves one without the other: `rust-version` is the toolchain we build and test
+with, and the MSRV-aware resolver (`resolver = "3"`) keeps `Cargo.lock` inside
+it. A `rust-version` below what the dependencies need would hold them back (kube
+5.1 needs Rust 1.95) and make every lock file maintenance undo targeted updates.
+
+Not tracked: a new Kubernetes minor in the test matrix (Renovate moves only the patch of a
 pinned minor; adding one is a decision, see below), and the runner image
 (`ubuntu-24.04`; a `packageRules` entry disables the `github-runners`
 datasource, because changing the runner is a deliberate decision).

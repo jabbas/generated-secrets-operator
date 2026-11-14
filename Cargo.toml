@@ -32,7 +32,7 @@ rand_chacha = "0.3"
 anyhow = "1"
 clap = { version = "4", features = ["derive", "env"] }
 tracing = "0.1"
-prometheus-client = "0.25"
+prometheus-client = "0.26"
 axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
 futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt", "ansi", "json", "env-filter"] }

@@ -13,7 +13,7 @@ set -euo pipefail
 
 # renovate: datasource=github-releases depName=mikefarah/yq
 YQ_VERSION=v4.54.3
-YQ_SHA256=7dd21fe96aac5ecccef949f4e4abecf9f9344dc3a853f5a2b4633c7a7afa7dda
+YQ_SHA256=09a25baa0e136b8633949e03117fc82cb9e50d10910f988ef17a1305539ebce4
 
 archive="yq_linux_amd64.tar.gz"
 dir="${RUNNER_TEMP:?RUNNER_TEMP is not set (this script is for Actions runners)}/tools/bin"

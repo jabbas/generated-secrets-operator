@@ -734,10 +734,11 @@ with, and the MSRV-aware resolver (`resolver = "3"`) keeps `Cargo.lock` inside
 it. A `rust-version` below what the dependencies need would hold them back (kube
 5.1 needs Rust 1.95) and make every lock file maintenance undo targeted updates.
 
-Not tracked: a new Kubernetes minor in the test matrix (Renovate moves only the patch of a
-pinned minor; adding one is a decision, see below), and the runner image
-(`ubuntu-24.04`; a `packageRules` entry disables the `github-runners`
-datasource, because changing the runner is a deliberate decision).
+Not tracked: a new Kubernetes minor in the test matrix (Renovate moves only
+the patch of a pinned minor; adding one is a decision, see below), and the
+runner image (`ubuntu-24.04`; a `packageRules` entry disables the
+`github-runners` datasource, because changing the runner is a deliberate
+decision).
 
 Mechanics: the tools in `env:`/shell scripts carry a `# renovate: datasource=…
 depName=…` comment above the pin (read by the first `customManagers` entry; for

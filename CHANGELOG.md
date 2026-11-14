@@ -10,7 +10,9 @@ All notable changes are documented here. The format follows
 
 - The workspace declares Rust 1.99 as its minimum version (the toolchain it is
   built with; 1.89 was never tested). This lets dependency updates such as kube
-  5.1, which needs Rust 1.95, stay in the lock file. Renovate now proposes Rust
+  5.1, which needs Rust 1.95, stay in the lock file. `Cargo.lock` moves kube to
+  5.1 and brings its new `parking_lot` 0.13 stack (`lock_api` 0.5,
+  `parking_lot_core` 0.10, `redox_syscall` 0.9). Renovate now proposes Rust
   toolchain updates.
 
 ## 0.1.5 - 2026-11-08

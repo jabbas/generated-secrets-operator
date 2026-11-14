@@ -329,9 +329,9 @@ fn rotation_parses() {
     };
     assert_eq!(secs("60m"), Some(Duration::from_secs(3_600)));
     assert_eq!(secs("1h"), Some(Duration::from_secs(3_600)));
-    assert_eq!(secs("90d"), Some(Duration::from_secs(7_776_000)));
-    assert_eq!(secs("3650d"), Some(Duration::from_secs(315_360_000)));
-    assert_eq!(secs("87600h"), Some(Duration::from_secs(315_360_000)));
+    assert_eq!(secs("90d"), Some(Duration::from_hours(2_160)));
+    assert_eq!(secs("3650d"), Some(Duration::from_hours(87_600)));
+    assert_eq!(secs("87600h"), Some(Duration::from_hours(87_600)));
 }
 
 #[test]

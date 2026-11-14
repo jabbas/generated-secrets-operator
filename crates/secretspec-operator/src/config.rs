@@ -10,7 +10,7 @@ use clap::{ArgAction, Parser, ValueEnum};
 /// Shortest allowed resync interval.
 pub const MIN_RESYNC: Duration = Duration::from_secs(60);
 /// Longest allowed resync interval.
-pub const MAX_RESYNC: Duration = Duration::from_secs(24 * 60 * 60);
+pub const MAX_RESYNC: Duration = Duration::from_hours(24);
 
 /// Log output format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
@@ -263,7 +263,7 @@ mod tests {
         c.concurrency = 1;
         c.resync_interval = Duration::from_secs(59);
         assert_eq!(c.validate(), Err(ConfigError::ResyncOutOfRange));
-        c.resync_interval = Duration::from_secs(25 * 3600);
+        c.resync_interval = Duration::from_hours(25);
         assert_eq!(c.validate(), Err(ConfigError::ResyncOutOfRange));
     }
 
@@ -272,7 +272,7 @@ mod tests {
         assert_eq!(parse_duration("30s"), Ok(Duration::from_secs(30)));
         assert_eq!(parse_duration("1m"), Ok(Duration::from_secs(60)));
         assert_eq!(parse_duration("1h"), Ok(Duration::from_secs(3600)));
-        assert_eq!(parse_duration("24h"), Ok(Duration::from_secs(86_400)));
+        assert_eq!(parse_duration("24h"), Ok(Duration::from_hours(24)));
     }
 
     #[test]

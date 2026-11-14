@@ -4,6 +4,15 @@ All notable changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Until the API leaves
 `v1alpha1`, a breaking change is always listed under its release.
 
+## Unreleased
+
+### Changed
+
+- The workspace declares Rust 1.99 as its minimum version (the toolchain it is
+  built with; 1.89 was never tested). This lets dependency updates such as kube
+  5.1, which needs Rust 1.95, stay in the lock file. Renovate now proposes Rust
+  toolchain updates.
+
 ## 0.1.5 - 2026-11-08
 
 ### Fixed

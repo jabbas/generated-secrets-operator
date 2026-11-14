@@ -8,8 +8,12 @@ generated value is still valid or must be regenerated.
 > lines, a trailing newline — changes the fingerprint of every existing
 > Secret. The operator would then see every stored fingerprint as stale and
 > **rotate every credential in every cluster** on upgrade. A new format needs
-> a new version header (`secretspec-fingerprint-v2`), an explicit migration
+> a new version header (`generated-secrets-fingerprint-v2`), an explicit migration
 > that recognises both, and must never silently replace v1.
+>
+> The format is frozen from 0.2.0; the 0.1.x format (header
+> `secretspec-fingerprint-v1`) belonged to the project's former name and is
+> never read.
 
 ## Concepts
 
@@ -51,7 +55,7 @@ Rules for every form:
 ### Characters mode (`field/<name>` and `basic-auth/password`)
 
 ```
-secretspec-fingerprint-v1
+generated-secrets-fingerprint-v1
 slot=<slot>
 mode=chars
 length=<n>
@@ -71,7 +75,7 @@ suffix=<hex of suffix bytes>
 ### Random-bytes mode (`field/<name>`)
 
 ```
-secretspec-fingerprint-v1
+generated-secrets-fingerprint-v1
 slot=field/<name>
 mode=bytes
 count=<n>
@@ -85,20 +89,20 @@ suffix=<hex of suffix bytes>
 ### SSH key pair (`ssh/keypair`)
 
 ```
-secretspec-fingerprint-v1
+generated-secrets-fingerprint-v1
 slot=ssh/keypair
 algorithm=ed25519
 ```
 
 ```
-secretspec-fingerprint-v1
+generated-secrets-fingerprint-v1
 slot=ssh/keypair
 algorithm=rsa
 bits=<2048|3072|4096>
 ```
 
 ```
-secretspec-fingerprint-v1
+generated-secrets-fingerprint-v1
 slot=ssh/keypair
 algorithm=ecdsa
 curve=<P-256|P-384|P-521>
@@ -109,7 +113,7 @@ The curve is the API wire string (`P-384`).
 ### htpasswd (`basic-auth/htpasswd`)
 
 ```
-secretspec-fingerprint-v1
+generated-secrets-fingerprint-v1
 slot=basic-auth/htpasswd
 username=<hex of username bytes>
 password-mac=<hex of HMAC-SHA256(key = htpasswd line bytes, message = password bytes)>
@@ -212,16 +216,16 @@ written out in full.)
 
 | # | Case | Canonical text (`\n` = LF) | SHA-256 |
 |---|---|---|---|
-| 1 | `field/password`, 32 alphanumeric characters | `secretspec-fingerprint-v1\nslot=field/password\nmode=chars\nlength=32\nalphabet=ALNUM\nrequire=0,0,0,0\nprefix=\nsuffix=\n` | `6819313d1058c21d17f2c11aa042b85e5b39f5b1bb9f505d9eeb90f013bb9266` |
-| 2 | `field/rpc-secret`, 32 bytes hex | `secretspec-fingerprint-v1\nslot=field/rpc-secret\nmode=bytes\ncount=32\nencoding=hex\nprefix=\nsuffix=\n` | `fdb7e7a25bf08598dd36a8ab9856b9c28b812ceee2f5153192c5886af53eb291` |
-| 3 | `field/access-key-id`, 24 hex characters, prefix `GK` | `secretspec-fingerprint-v1\nslot=field/access-key-id\nmode=chars\nlength=24\nalphabet=30313233343536373839616263646566\nrequire=0,0,0,0\nprefix=474b\nsuffix=\n` | `519823d7c00a3a06bae896caddd8f78a80c114b25bc3073ee00f1bb12b8bc0cd` |
-| 4 | `field/token`, 48 bytes base64url, prefix `tg6_`, suffix `-x` | `secretspec-fingerprint-v1\nslot=field/token\nmode=bytes\ncount=48\nencoding=base64url\nprefix=7467365f\nsuffix=2d78\n` | `2ba5ece6a2d18b7b89dceef4bd2bce1c1caa5146db4c83992792d501cc0f0a15` |
-| 5 | `basic-auth/password`, 32 alphanumeric, require 1,2,3,4 | `secretspec-fingerprint-v1\nslot=basic-auth/password\nmode=chars\nlength=32\nalphabet=ALNUM\nrequire=1,2,3,4\nprefix=\nsuffix=\n` | `7f25ae7647044e77aa69810b6e6d48b757b10f06735cfb9c60a8b7028f3ec0ab` |
-| 6 | `ssh/keypair`, ed25519 | `secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n` | `b62ed2e39a6976cc6626f17f758b49eccf548c2132f73d98ca25c2aa1f89f746` |
-| 7 | `ssh/keypair`, RSA 4096 | `secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=rsa\nbits=4096\n` | `33454c99221f4015946a46dd2760c404084c058d7a4544047aed390bfe099940` |
-| 8 | `ssh/keypair`, ECDSA P-384 | `secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ecdsa\ncurve=P-384\n` | `4a877ed8174512b3202da9155390324cb7228af6d6bf9158ec3598c50c563eef` |
-| 9 | `basic-auth/htpasswd`, username `admin`, password `secret`, htpasswd line `LINE` (below), cost 12 | `secretspec-fingerprint-v1\nslot=basic-auth/htpasswd\nusername=61646d696e\npassword-mac=6364d747107a94c67b469b00f1839829f863bddf086718b2c7f883d8a35d2e2d\ncost=12\n` | `184412b8f5585643e0bc203457fadcf8047ef90aaeed8a30ee104fdbe70e9ca8` |
-| 10 | `basic-auth/password`, every default (32 alphanumeric, require 0,0,0,0, no prefix/suffix) | `secretspec-fingerprint-v1\nslot=basic-auth/password\nmode=chars\nlength=32\nalphabet=ALNUM\nrequire=0,0,0,0\nprefix=\nsuffix=\n` | `0e8fee5d13ec3fe16a5615c6b3c29a303047c378d6558fc859ef3c7234b7f4c4` |
+| 1 | `field/password`, 32 alphanumeric characters | `generated-secrets-fingerprint-v1\nslot=field/password\nmode=chars\nlength=32\nalphabet=ALNUM\nrequire=0,0,0,0\nprefix=\nsuffix=\n` | `19ef76bf380a7179247b264a88a2abc1e8e0e9d8672216faffb95206bb96228c` |
+| 2 | `field/rpc-secret`, 32 bytes hex | `generated-secrets-fingerprint-v1\nslot=field/rpc-secret\nmode=bytes\ncount=32\nencoding=hex\nprefix=\nsuffix=\n` | `38178d495c71ed16b11f068cb3cd580a0e942c0b395682378308422402eb284a` |
+| 3 | `field/access-key-id`, 24 hex characters, prefix `GK` | `generated-secrets-fingerprint-v1\nslot=field/access-key-id\nmode=chars\nlength=24\nalphabet=30313233343536373839616263646566\nrequire=0,0,0,0\nprefix=474b\nsuffix=\n` | `1f933a465e283c74614ba434794fead46cd2fac6af392ef0245f5c991a5ca1f0` |
+| 4 | `field/token`, 48 bytes base64url, prefix `tg6_`, suffix `-x` | `generated-secrets-fingerprint-v1\nslot=field/token\nmode=bytes\ncount=48\nencoding=base64url\nprefix=7467365f\nsuffix=2d78\n` | `09240767b4cebefe03a6d1d93eb315e464a8b4efe7217b84c6f5d82c621324e0` |
+| 5 | `basic-auth/password`, 32 alphanumeric, require 1,2,3,4 | `generated-secrets-fingerprint-v1\nslot=basic-auth/password\nmode=chars\nlength=32\nalphabet=ALNUM\nrequire=1,2,3,4\nprefix=\nsuffix=\n` | `630341f1a39d07c89e9152a5d0f51ca88813ab65531ba73cf6237cabbcfb49f2` |
+| 6 | `ssh/keypair`, ed25519 | `generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n` | `99b364cb8f12c51d409eee6a5d5ff576a65b17649a8395f78a090f6688b16f1a` |
+| 7 | `ssh/keypair`, RSA 4096 | `generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=rsa\nbits=4096\n` | `b62a71589326ab933858ae7a82a250f96aeb2a874db4e63eb00db1ce15d87142` |
+| 8 | `ssh/keypair`, ECDSA P-384 | `generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ecdsa\ncurve=P-384\n` | `6c48b18050d1d38663ce901f6f8706307dd5a041e11dee521a2e3fef2ad92819` |
+| 9 | `basic-auth/htpasswd`, username `admin`, password `secret`, htpasswd line `LINE` (below), cost 12 | `generated-secrets-fingerprint-v1\nslot=basic-auth/htpasswd\nusername=61646d696e\npassword-mac=6364d747107a94c67b469b00f1839829f863bddf086718b2c7f883d8a35d2e2d\ncost=12\n` | `430a2529e335c06d4f8aae2429ad1a27bbbf8c3fb57e5eb642f219b51d04556e` |
+| 10 | `basic-auth/password`, every default (32 alphanumeric, require 0,0,0,0, no prefix/suffix) | `generated-secrets-fingerprint-v1\nslot=basic-auth/password\nmode=chars\nlength=32\nalphabet=ALNUM\nrequire=0,0,0,0\nprefix=\nsuffix=\n` | `3c72fbc038665c762605f1c73dd470dabd342d0a72ed7feb2a3c3c3c7a94dd4a` |
 
 In vector 9, `LINE` is the example htpasswd line produced by
 `htpasswd -nbB -C 12 admin secret` (a real bcrypt hash of `secret`):
@@ -248,8 +252,8 @@ pins that end to end, so a changed default fails as loudly as a changed format.
 Reproduce vector 6:
 
 ```sh
-printf 'secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n' | shasum -a 256
-# b62ed2e39a6976cc6626f17f758b49eccf548c2132f73d98ca25c2aa1f89f746  -
+printf 'generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n' | shasum -a 256
+# 99b364cb8f12c51d409eee6a5d5ff576a65b17649a8395f78a090f6688b16f1a  -
 ```
 
 In vectors 1, 5 and 10 replace `ALNUM` with the full hex string above before

@@ -21,7 +21,7 @@ use secretspec_core::{
 
 /// Golden vector 10: `basic-auth/password` with every default.
 const BASIC_PASSWORD_DEFAULT: &str =
-    "0e8fee5d13ec3fe16a5615c6b3c29a303047c378d6558fc859ef3c7234b7f4c4";
+    "3c72fbc038665c762605f1c73dd470dabd342d0a72ed7feb2a3c3c3c7a94dd4a";
 
 const ALNUM: &str = "303132333435363738394142434445464748494a4b4c4d4e4f505152535455565758595a6162636465666768696a6b6c6d6e6f707172737475767778797a";
 
@@ -115,7 +115,7 @@ fn canonical_chars_default_field() {
     assert_eq!(
         password_canonical(),
         format!(
-            "secretspec-fingerprint-v1\nslot=field/password\nmode=chars\nlength=32\nalphabet={ALNUM}\nrequire=0,0,0,0\nprefix=\nsuffix=\n"
+            "generated-secrets-fingerprint-v1\nslot=field/password\nmode=chars\nlength=32\nalphabet={ALNUM}\nrequire=0,0,0,0\nprefix=\nsuffix=\n"
         )
     );
 }
@@ -124,7 +124,7 @@ fn canonical_chars_default_field() {
 fn canonical_bytes_hex_32() {
     assert_eq!(
         rpc_canonical(),
-        "secretspec-fingerprint-v1\nslot=field/rpc-secret\nmode=bytes\ncount=32\nencoding=hex\nprefix=\nsuffix=\n"
+        "generated-secrets-fingerprint-v1\nslot=field/rpc-secret\nmode=bytes\ncount=32\nencoding=hex\nprefix=\nsuffix=\n"
     );
 }
 
@@ -132,7 +132,7 @@ fn canonical_bytes_hex_32() {
 fn canonical_hex_prefix() {
     assert_eq!(
         hex_prefix_canonical(),
-        "secretspec-fingerprint-v1\nslot=field/access-key-id\nmode=chars\nlength=24\nalphabet=30313233343536373839616263646566\nrequire=0,0,0,0\nprefix=474b\nsuffix=\n"
+        "generated-secrets-fingerprint-v1\nslot=field/access-key-id\nmode=chars\nlength=24\nalphabet=30313233343536373839616263646566\nrequire=0,0,0,0\nprefix=474b\nsuffix=\n"
     );
 }
 
@@ -153,11 +153,11 @@ fn canonical_encoding_uses_api_wire_strings() {
 fn canonical_ssh_variants() {
     assert_eq!(
         canonical_ssh(&SshAlgorithmParams::Ed25519),
-        "secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n"
+        "generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n"
     );
     assert_eq!(
         canonical_ssh(&SshAlgorithmParams::Rsa { bits: 4096 }),
-        "secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=rsa\nbits=4096\n"
+        "generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=rsa\nbits=4096\n"
     );
     for (curve, wire) in [
         (EcdsaCurve::P256, "P-256"),
@@ -166,16 +166,28 @@ fn canonical_ssh_variants() {
     ] {
         assert_eq!(
             canonical_ssh(&SshAlgorithmParams::Ecdsa { curve }),
-            format!("secretspec-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ecdsa\ncurve={wire}\n")
+            format!(
+                "generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ecdsa\ncurve={wire}\n"
+            )
         );
     }
+}
+
+#[test]
+fn fingerprint_header_is_generated_secrets() {
+    let canonical = canonical_ssh(&SshAlgorithmParams::Ed25519);
+    assert_eq!(
+        canonical,
+        "generated-secrets-fingerprint-v1\nslot=ssh/keypair\nalgorithm=ed25519\n"
+    );
+    assert!(!canonical.contains("secretspec"));
 }
 
 #[test]
 fn canonical_htpasswd_format() {
     assert_eq!(
         htpasswd_canonical(),
-        "secretspec-fingerprint-v1\nslot=basic-auth/htpasswd\nusername=61646d696e\npassword-mac=6364d747107a94c67b469b00f1839829f863bddf086718b2c7f883d8a35d2e2d\ncost=12\n"
+        "generated-secrets-fingerprint-v1\nslot=basic-auth/htpasswd\nusername=61646d696e\npassword-mac=6364d747107a94c67b469b00f1839829f863bddf086718b2c7f883d8a35d2e2d\ncost=12\n"
     );
     // The unsalted SHA-256 of the password must never appear.
     assert!(
@@ -189,7 +201,7 @@ fn canonical_basic_auth_password_uses_chars_form() {
     assert_eq!(
         basic_password_canonical(),
         format!(
-            "secretspec-fingerprint-v1\nslot=basic-auth/password\nmode=chars\nlength=32\nalphabet={ALNUM}\nrequire=1,2,3,4\nprefix=\nsuffix=\n"
+            "generated-secrets-fingerprint-v1\nslot=basic-auth/password\nmode=chars\nlength=32\nalphabet={ALNUM}\nrequire=1,2,3,4\nprefix=\nsuffix=\n"
         )
     );
 }
@@ -200,39 +212,39 @@ fn golden_fingerprint_values() {
         (
             "chars default",
             password_canonical(),
-            "6819313d1058c21d17f2c11aa042b85e5b39f5b1bb9f505d9eeb90f013bb9266",
+            "19ef76bf380a7179247b264a88a2abc1e8e0e9d8672216faffb95206bb96228c",
         ),
         (
             "bytes hex",
             rpc_canonical(),
-            "fdb7e7a25bf08598dd36a8ab9856b9c28b812ceee2f5153192c5886af53eb291",
+            "38178d495c71ed16b11f068cb3cd580a0e942c0b395682378308422402eb284a",
         ),
         (
             "hex prefix",
             hex_prefix_canonical(),
-            "519823d7c00a3a06bae896caddd8f78a80c114b25bc3073ee00f1bb12b8bc0cd",
+            "1f933a465e283c74614ba434794fead46cd2fac6af392ef0245f5c991a5ca1f0",
         ),
         (
             "ssh ed25519",
             canonical_ssh(&SshAlgorithmParams::Ed25519),
-            "b62ed2e39a6976cc6626f17f758b49eccf548c2132f73d98ca25c2aa1f89f746",
+            "99b364cb8f12c51d409eee6a5d5ff576a65b17649a8395f78a090f6688b16f1a",
         ),
         (
             "ssh rsa 4096",
             canonical_ssh(&SshAlgorithmParams::Rsa { bits: 4096 }),
-            "33454c99221f4015946a46dd2760c404084c058d7a4544047aed390bfe099940",
+            "b62a71589326ab933858ae7a82a250f96aeb2a874db4e63eb00db1ce15d87142",
         ),
         (
             "ssh ecdsa P-384",
             canonical_ssh(&SshAlgorithmParams::Ecdsa {
                 curve: EcdsaCurve::P384,
             }),
-            "4a877ed8174512b3202da9155390324cb7228af6d6bf9158ec3598c50c563eef",
+            "6c48b18050d1d38663ce901f6f8706307dd5a041e11dee521a2e3fef2ad92819",
         ),
         (
             "htpasswd",
             htpasswd_canonical(),
-            "184412b8f5585643e0bc203457fadcf8047ef90aaeed8a30ee104fdbe70e9ca8",
+            "430a2529e335c06d4f8aae2429ad1a27bbbf8c3fb57e5eb642f219b51d04556e",
         ),
         (
             "basic-auth password defaults",
@@ -242,12 +254,12 @@ fn golden_fingerprint_values() {
         (
             "bytes base64url prefix suffix",
             token_canonical(),
-            "2ba5ece6a2d18b7b89dceef4bd2bce1c1caa5146db4c83992792d501cc0f0a15",
+            "09240767b4cebefe03a6d1d93eb315e464a8b4efe7217b84c6f5d82c621324e0",
         ),
         (
             "basic-auth password require",
             basic_password_canonical(),
-            "7f25ae7647044e77aa69810b6e6d48b757b10f06735cfb9c60a8b7028f3ec0ab",
+            "630341f1a39d07c89e9152a5d0f51ca88813ab65531ba73cf6237cabbcfb49f2",
         ),
     ];
     for (name, canonical, expected) in cases {
@@ -350,7 +362,7 @@ fn expected_fingerprints_slots() {
     assert_eq!(got.len(), 1);
     assert_eq!(
         got[&Slot::SshKeyPair].as_str(),
-        "b62ed2e39a6976cc6626f17f758b49eccf548c2132f73d98ca25c2aa1f89f746"
+        "99b364cb8f12c51d409eee6a5d5ff576a65b17649a8395f78a090f6688b16f1a"
     );
 
     // htpasswd depends on the generated password, so it is never "expected".
@@ -479,8 +491,8 @@ fn fingerprint_changes_with_slot_and_with_htpasswd_inputs() {
     assert_ne!(base, h("admin", b"secret", &line.replace("0Dl", "1Dl"), 12));
 }
 
-const HEX_A: &str = "6819313d1058c21d17f2c11aa042b85e5b39f5b1bb9f505d9eeb90f013bb9266";
-const HEX_B: &str = "fdb7e7a25bf08598dd36a8ab9856b9c28b812ceee2f5153192c5886af53eb291";
+const HEX_A: &str = "19ef76bf380a7179247b264a88a2abc1e8e0e9d8672216faffb95206bb96228c";
+const HEX_B: &str = "38178d495c71ed16b11f068cb3cd580a0e942c0b395682378308422402eb284a";
 
 #[test]
 fn fingerprint_map_annotation_is_sorted_compact_json() {

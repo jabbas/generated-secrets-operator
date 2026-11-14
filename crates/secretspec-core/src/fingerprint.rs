@@ -27,7 +27,7 @@ use sha2::{Digest, Sha256};
 use crate::value::SecretValue;
 
 /// First line of every canonical text; the format version.
-const HEADER: &str = "secretspec-fingerprint-v1";
+const HEADER: &str = "generated-secrets-fingerprint-v1";
 /// Maximum length of a Secret key name (and so of a `field/<name>` slot name).
 const MAX_KEY_NAME_LEN: usize = 253;
 

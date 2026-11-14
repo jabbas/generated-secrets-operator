@@ -34,7 +34,7 @@ fn default_field_matches_golden_vector_1() {
         fingerprints_of("fields: [{name: password}]"),
         pinned(
             &Slot::Field("password".to_owned()),
-            "6819313d1058c21d17f2c11aa042b85e5b39f5b1bb9f505d9eeb90f013bb9266"
+            "19ef76bf380a7179247b264a88a2abc1e8e0e9d8672216faffb95206bb96228c"
         )
     );
 }
@@ -45,7 +45,7 @@ fn default_ssh_key_pair_matches_golden_vector_6() {
         fingerprints_of("sshKeyPair: {}"),
         pinned(
             &Slot::SshKeyPair,
-            "b62ed2e39a6976cc6626f17f758b49eccf548c2132f73d98ca25c2aa1f89f746"
+            "99b364cb8f12c51d409eee6a5d5ff576a65b17649a8395f78a090f6688b16f1a"
         )
     );
 }
@@ -56,7 +56,7 @@ fn default_rsa_key_pair_matches_golden_vector_7() {
         fingerprints_of("sshKeyPair: {algorithm: rsa}"),
         pinned(
             &Slot::SshKeyPair,
-            "33454c99221f4015946a46dd2760c404084c058d7a4544047aed390bfe099940"
+            "b62a71589326ab933858ae7a82a250f96aeb2a874db4e63eb00db1ce15d87142"
         )
     );
 }
@@ -67,7 +67,7 @@ fn default_basic_auth_password_matches_golden_vector_10() {
         fingerprints_of("basicAuth: {username: admin}"),
         pinned(
             &Slot::BasicAuthPassword,
-            "0e8fee5d13ec3fe16a5615c6b3c29a303047c378d6558fc859ef3c7234b7f4c4"
+            "3c72fbc038665c762605f1c73dd470dabd342d0a72ed7feb2a3c3c3c7a94dd4a"
         )
     );
 }

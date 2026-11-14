@@ -7,10 +7,11 @@
 //! the slot's fully resolved generation parameters. The operator regenerates a
 //! value exactly when its stored fingerprint differs from the expected one.
 //!
-//! **The canonical text is frozen forever.** Changing any byte of it changes
-//! the fingerprints of existing Secrets and so rotates every credential in
-//! every cluster. The normative description is `docs/fingerprints.md`; the
-//! golden tests in `tests/fingerprint_golden.rs` pin the hashes.
+//! **The canonical text is frozen from 0.2.0.** Changing any byte of it
+//! changes the fingerprints of existing Secrets and so rotates every credential
+//! in every cluster. The 0.1.x header is never read. The normative description
+//! is `docs/fingerprints.md`; the golden tests in `tests/fingerprint_golden.rs`
+//! pin the hashes.
 
 use std::collections::BTreeMap;
 use std::fmt;

@@ -24,7 +24,7 @@ generated value is still valid or must be regenerated.
   of the slot's *canonical text*, a function of the slot's **fully resolved**
   generation parameters (every default applied; see the stability rule below).
 - The operator stores all fingerprints of a Secret as a JSON object in the
-  annotation `secretspec.jabbas.eu/fingerprints`. A value is kept while its
+  annotation `generatedsecrets.jabbas.eu/fingerprints`. A value is kept while its
   stored fingerprint equals the expected one and regenerated otherwise.
 
 ## Slots
@@ -154,7 +154,7 @@ regenerates a value:
 
 ## Annotation format
 
-`secretspec.jabbas.eu/fingerprints` is a compact JSON object (no whitespace)
+`generatedsecrets.jabbas.eu/fingerprints` is a compact JSON object (no whitespace)
 from slot string to fingerprint, **keys sorted by their string form** (byte
 order):
 
@@ -197,7 +197,7 @@ the raw spec. Every default that feeds a canonical text (`length` 32,
 `charset` alphanumeric, empty `prefix`/`suffix`, `require` all zero, `rsaBits`
 default, `ecdsaCurve` default, ...) is therefore part of the API-version
 contract: **defaults and this format MUST NOT change within an apiVersion.**
-The golden vectors below (and `crates/secretspec-core/tests/fingerprint_golden.rs`)
+The golden vectors below (and `crates/generated-secrets-core/tests/fingerprint_golden.rs`)
 guard this. A mismatch is a release blocker; the expected values are never
 updated to make a test pass.
 
@@ -246,7 +246,7 @@ python3 -c 'import hmac,hashlib,sys; print(hmac.new(sys.argv[1].encode(), b"secr
 
 Vectors 1, 6, 7 and 10 are also what a minimal manifest resolves to
 (`fields: [{name: password}]`, `sshKeyPair: {}`, `sshKeyPair: {algorithm: rsa}`,
-`basicAuth: {username: admin}`); `crates/secretspec-core/tests/resolve_golden.rs`
+`basicAuth: {username: admin}`); `crates/generated-secrets-core/tests/resolve_golden.rs`
 pins that end to end, so a changed default fails as loudly as a changed format.
 
 Reproduce vector 6:

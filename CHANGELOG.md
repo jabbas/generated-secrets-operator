@@ -4,7 +4,7 @@ All notable changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Until the API leaves
 `v1alpha1`, a breaking change is always listed under its release.
 
-## Unreleased
+## 0.2.0 - 2026-11-15
 
 ### BREAKING: renamed to Generated Secrets Operator
 

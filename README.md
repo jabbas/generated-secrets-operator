@@ -28,7 +28,7 @@ Run the `kubectl` commands from a clone of this repository.
 
 ```sh
 helm repo add jabbas https://jabbas.github.io/helm-charts
-helm install generated-secrets-operator jabbas/generated-secrets-operator --version 0.1.5 --namespace generated-secrets-system --create-namespace --wait
+helm install generated-secrets-operator jabbas/generated-secrets-operator --version 0.2.0 --namespace generated-secrets-system --create-namespace --wait
 kubectl apply -f examples/app-admin-password.yaml
 kubectl wait --for=condition=Ready gensecret/app-admin --timeout=60s
 kubectl get generatedsecrets app-admin

@@ -146,13 +146,13 @@ The only place a value is written is the Secret itself.
 
 ## Adoption
 
-When a `GeneratedSecret` is created and a Secret with its name already exists, the
-operator **adopts** it only if the Secret carries the operator's labels
-(`app.kubernetes.io/managed-by: generated-secrets-operator` and a `owner-name` equal to
-the `GeneratedSecret`'s name) and has no live controller owner. It then keeps every
-value whose stored fingerprint matches, regenerates the rest, sets the owner
-reference according to `deletionPolicy`, records the new `owner-uid` and emits an
-`Adopted` Event. This is how a `Retain`ed credential survives an uninstall and a
+When a `GeneratedSecret` is created and a Secret with its name already exists,
+the operator **adopts** it only if the Secret carries the operator's labels
+(`app.kubernetes.io/managed-by: generated-secrets-operator` and an `owner-name`
+equal to the `GeneratedSecret`'s name) and has no live controller owner. It then
+keeps every value whose stored fingerprint matches, regenerates the rest, sets
+the owner reference according to `deletionPolicy`, records the new `owner-uid`
+and emits an `Adopted` Event. This is how a `Retain`ed credential survives an uninstall and a
 reinstall. A Secret that is still owned by a *deleted* `GeneratedSecret` is not
 adopted until garbage collection has removed that owner
 (`WaitingForGarbageCollection`).
@@ -315,17 +315,17 @@ also on a release candidate (`revision` is the commit); releases up to 0.1.3
 label a candidate with its own tag.
 
 Set the variables for the release you are installing. For the current release,
-`0.1.5`:
+`0.2.0`:
 
 ```sh
-TAG=0.1.5                  # the git/image tag (plain semver)
-CHART_VERSION=0.1.5        # the chart version
+TAG=0.2.0                  # the git/image tag (plain semver)
+CHART_VERSION=0.2.0        # the chart version
 IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 ```
 
 From 0.1.1 on, `<tag>` is the plain version and equals the chart version
-(`0.1.5-rc.1` for a release candidate). For the legacy `0.1.0` use
+(`0.2.0-rc.1` for a release candidate). For the legacy `0.1.0` use
 `TAG=v0.1.0` and `CHART_VERSION=0.1.0`.
 
 Verify the image (the tag resolves to the multi-arch index, which is signed):

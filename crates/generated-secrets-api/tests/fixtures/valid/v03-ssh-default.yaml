@@ -1,0 +1,7 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v03-ssh-default
+  namespace: test
+spec:
+  sshKeyPair: {}

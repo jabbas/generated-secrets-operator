@@ -26,11 +26,11 @@ pass() { echo "PASS: $*"; }
 make_chart() {
   local dir="$1" version="$2"
   mkdir -p "$dir/templates" "$dir/files/crd"
-  printf 'apiVersion: v2\nname: secretspec-operator\ndescription: test\ntype: application\nversion: %s\nappVersion: %s\nkubeVersion: ">=1.34.0-0"\n' \
+  printf 'apiVersion: v2\nname: generated-secrets-operator\ndescription: test\ntype: application\nversion: %s\nappVersion: %s\nkubeVersion: ">=1.34.0-0"\n' \
     "$version" "$version" > "$dir/Chart.yaml"
   printf 'image: {{ .Values.image }}:{{ .Chart.AppVersion }}\n' > "$dir/templates/deployment.yaml"
-  printf 'kind: CustomResourceDefinition\nspec:\n  version: v1alpha1\n' > "$dir/files/crd/secretspecs.yaml"
-  printf 'image: ghcr.io/jabbas/secretspec-operator\nreplicas: 1\n' > "$dir/values.yaml"
+  printf 'kind: CustomResourceDefinition\nspec:\n  version: v1alpha1\n' > "$dir/files/crd/generatedsecrets.yaml"
+  printf 'image: ghcr.io/jabbas/generated-secrets-operator\nreplicas: 1\n' > "$dir/values.yaml"
 }
 
 # scenario <name>: a release candidate chart and an identical final chart.
@@ -68,17 +68,17 @@ execute
 expect_fail "a template that differs fails" "templates/deployment.yaml differs"
 
 scenario crd-differs
-printf 'kind: CustomResourceDefinition\nspec:\n  version: v1alpha2\n' > "$final_dir/files/crd/secretspecs.yaml"
+printf 'kind: CustomResourceDefinition\nspec:\n  version: v1alpha2\n' > "$final_dir/files/crd/generatedsecrets.yaml"
 execute
-expect_fail "a CRD that differs fails" "files/crd/secretspecs.yaml differs"
+expect_fail "a CRD that differs fails" "files/crd/generatedsecrets.yaml differs"
 
 scenario values-differs
-printf 'image: ghcr.io/jabbas/secretspec-operator\nreplicas: 2\n' > "$final_dir/values.yaml"
+printf 'image: ghcr.io/jabbas/generated-secrets-operator\nreplicas: 2\n' > "$final_dir/values.yaml"
 execute
 expect_fail "values that differ fail" "values.yaml differs"
 
 scenario chart-field-differs
-printf 'apiVersion: v2\nname: secretspec-operator\ndescription: test\ntype: application\nversion: 0.1.3\nappVersion: 0.1.3\nkubeVersion: ">=1.30.0-0"\n' \
+printf 'apiVersion: v2\nname: generated-secrets-operator\ndescription: test\ntype: application\nversion: 0.1.3\nappVersion: 0.1.3\nkubeVersion: ">=1.30.0-0"\n' \
   > "$final_dir/Chart.yaml"
 execute
 expect_fail "an extra Chart.yaml field that differs fails" "Chart.yaml differs in more than version and appVersion"
@@ -201,7 +201,7 @@ execute
 expect_fail "a second version line fails" "has 2 'version:' lines"
 
 scenario missing-app-version
-printf 'apiVersion: v2\nname: secretspec-operator\ndescription: test\ntype: application\nversion: 0.1.3\nkubeVersion: ">=1.34.0-0"\n' \
+printf 'apiVersion: v2\nname: generated-secrets-operator\ndescription: test\ntype: application\nversion: 0.1.3\nkubeVersion: ">=1.34.0-0"\n' \
   > "$final_dir/Chart.yaml"
 execute
 expect_fail "a missing appVersion line fails" "has 0 'appVersion:' lines"

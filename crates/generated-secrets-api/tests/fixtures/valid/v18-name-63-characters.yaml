@@ -1,0 +1,8 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v18-name-63-characters-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  namespace: test
+spec:
+  fields:
+    - name: password

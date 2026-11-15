@@ -1,0 +1,9 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v08-ssh-auth-type
+  namespace: test
+spec:
+  secret:
+    type: kubernetes.io/ssh-auth
+  sshKeyPair: {}

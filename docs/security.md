@@ -11,7 +11,7 @@ the Secrets they live in.
 **Roles.**
 
 - *Platform team:* installs the operator, owns its RBAC and scope.
-- *Application developers:* may create `SecretSpec`s in their namespaces, but do
+- *Application developers:* may create `GeneratedSecret`s in their namespaces, but do
   not necessarily have access to Secrets.
 - *Everyone else in the cluster:* must not get values they were not already
   allowed to read.
@@ -23,17 +23,17 @@ the Secrets they live in.
   restart, upgrade, cache loss, leader change or re-apply of an identical
   manifest. A golden test pins the fingerprint format.
 - **The operator being talked into touching a Secret it did not create.** It
-  writes only Secrets that carry its `managed-by` and `spec-name` labels (or that
+  writes only Secrets that carry its `managed-by` and `owner-name` labels (or that
   do not exist). Any other Secret with the target name yields a `Conflict` and is
   left alone, never adopted.
-- **Privilege escalation through the `SecretSpec` API.** Anyone who may create
-  `SecretSpec`s can make the operator create Secrets in that namespace, so
+- **Privilege escalation through the `GeneratedSecret` API.** Anyone who may create
+  `GeneratedSecret`s can make the operator create Secrets in that namespace, so
   `secret.type` is limited to `Opaque`, `kubernetes.io/basic-auth`,
   `kubernetes.io/ssh-auth` and custom types outside `kubernetes.io/`; service
   account tokens, bootstrap tokens and other built-in types, whose contracts the
   operator does not implement, are rejected. Labels and annotations under
-  `secretspec.jabbas.eu/` and `app.kubernetes.io/managed-by` cannot be set from a
-  `SecretSpec`, so a spec cannot forge the markers the operator trusts.
+  `generatedsecrets.jabbas.eu/` and `app.kubernetes.io/managed-by` cannot be set from a
+  `GeneratedSecret`, so a spec cannot forge the markers the operator trusts.
 - **Value leaks through observability.** See
   [Value redaction](#value-redaction-guarantees).
 - **Weak randomness and bias.** Values come from the OS CSPRNG with rejection
@@ -54,7 +54,7 @@ the Secrets they live in.
   Secrets: they would contain the values the operator writes and reads. Keep
   Secrets at `Metadata` level in your audit policy.
 - **Confidentiality of `spec.data`.** Literals in `data` are stored in the
-  `SecretSpec`, which is not a Secret: it appears in `kubectl get secretspec -o
+  `GeneratedSecret`, which is not a Secret: it appears in `kubectl get generatedsecret -o
   yaml`, in Helm release values and in your git repository. Put only
   non-confidential values (such as a user name) there.
 - **Consumers.** What an application does with the value, and rotating it
@@ -66,9 +66,9 @@ The chart grants exactly the following, and nothing more:
 
 | API group | Resource | Verbs | Why |
 |---|---|---|---|
-| `secretspec.jabbas.eu` | `secretspecs` | `get`, `list`, `watch` | Read the specs. |
-| `secretspec.jabbas.eu` | `secretspecs/status` | `get`, `patch`, `update` | Write conditions and times. |
-| `secretspec.jabbas.eu` | `secretspecs/finalizers` | `update` | Needed on clusters with the `OwnerReferencesPermissionEnforcement` admission plugin (for example OpenShift) to set `blockOwnerDeletion` on the owner reference. |
+| `generatedsecrets.jabbas.eu` | `generatedsecrets` | `get`, `list`, `watch` | Read the specs. |
+| `generatedsecrets.jabbas.eu` | `generatedsecrets/status` | `get`, `patch`, `update` | Write conditions and times. |
+| `generatedsecrets.jabbas.eu` | `generatedsecrets/finalizers` | `update` | Needed on clusters with the `OwnerReferencesPermissionEnforcement` admission plugin (for example OpenShift) to set `blockOwnerDeletion` on the owner reference. |
 | `""` | `secrets` | `get`, `list`, `watch`, `create`, `patch`, `update` | Read and write the generated Secrets. **No `delete`.** |
 | `events.k8s.io` | `events` | `create`, `patch` | Publish Events. |
 | `coordination.k8s.io` | `leases` | `get`, `update` (only the operator's own Lease, by `resourceNames`) | Leader election; a `Role` in the release namespace only. |
@@ -83,7 +83,7 @@ The chart grants exactly the following, and nothing more:
   the operator cannot see anything elsewhere. Choose it when a cluster-wide
   Secret reader is not acceptable. See
   [Installation](installation.md#scope-cluster-mode-and-namespace-mode).
-- The operator cannot delete a Secret. Cleaning up after a `SecretSpec` is done
+- The operator cannot delete a Secret. Cleaning up after a `GeneratedSecret` is done
   by Kubernetes garbage collection (`Delete`) or not at all (`Retain`), and
   there are no finalizers.
 - There are **no admission webhooks**, no cluster-scoped write permission, and no
@@ -108,15 +108,15 @@ are not there. (Images of 0.1.0 and 0.1.1 are built on distroless
 
 - **Secrets: metadata only.** The operator watches Secrets through the
   metadata-only API and restricts the watch on the server with the label selector
-  `app.kubernetes.io/managed-by=secretspec-operator`. Secret *data* never enters
+  `app.kubernetes.io/managed-by=generated-secrets-operator`. Secret *data* never enters
   the watch cache, and unmanaged Secrets are not even listed.
 - **Secret data is read only during a reconcile.** To plan a reconcile the
-  operator reads the **one** Secret that has the `SecretSpec`'s name with a
+  operator reads the **one** Secret that has the `GeneratedSecret`'s name with a
   direct `GET` (also when it turns out not to be managed, in which case it is only
   inspected for ownership and then left alone), keeps it in memory for the
   duration of that reconcile, and drops it. Values are held in a type that is zeroed on drop and redacts itself when
   formatted.
-- **`SecretSpec`s are cached in full.** They contain definitions, not generated
+- **`GeneratedSecret`s are cached in full.** They contain definitions, not generated
   values.
 
 ## Value redaction guarantees
@@ -146,19 +146,19 @@ The only place a value is written is the Secret itself.
 
 ## Adoption
 
-When a `SecretSpec` is created and a Secret with its name already exists, the
-operator **adopts** it only if the Secret carries the operator's labels
-(`app.kubernetes.io/managed-by: secretspec-operator` and a `spec-name` equal to
-the `SecretSpec`'s name) and has no live controller owner. It then keeps every
-value whose stored fingerprint matches, regenerates the rest, sets the owner
-reference according to `deletionPolicy`, records the new `spec-uid` and emits an
-`Adopted` Event. This is how a `Retain`ed credential survives an uninstall and a
-reinstall. A Secret that is still owned by a *deleted* `SecretSpec` is not
+When a `GeneratedSecret` is created and a Secret with its name already exists,
+the operator **adopts** it only if the Secret carries the operator's labels
+(`app.kubernetes.io/managed-by: generated-secrets-operator` and an `owner-name`
+equal to the `GeneratedSecret`'s name) and has no live controller owner. It then
+keeps every value whose stored fingerprint matches, regenerates the rest, sets
+the owner reference according to `deletionPolicy`, records the new `owner-uid`
+and emits an `Adopted` Event. This is how a `Retain`ed credential survives an
+uninstall and a reinstall. A Secret that is still owned by a *deleted* `GeneratedSecret` is not
 adopted until garbage collection has removed that owner
 (`WaitingForGarbageCollection`).
 
 Adoption is decided by labels. Anyone who can create Secrets in a namespace could
-craft a Secret with those labels and have a later `SecretSpec` of that name adopt
+craft a Secret with those labels and have a later `GeneratedSecret` of that name adopt
 it (and, if its fingerprints do not match, overwrite its values). They already
 have write access to Secrets in that namespace, so this is **not a privilege
 escalation**; it is the reason for the guidance to treat write access to Secrets
@@ -260,7 +260,7 @@ after the release is not reflected in it. Re-scan the SBOM or the image with
 your own tool to learn about newer advisories.
 
 The GitHub Release carries the chart package, the two SBOMs
-(`secretspec-operator-<tag>-linux-amd64.spdx.json` and `…-linux-arm64.spdx.json`)
+(`generated-secrets-operator-<tag>-linux-amd64.spdx.json` and `…-linux-arm64.spdx.json`)
 and a `SHA256SUMS` file. The SBOM files there are copies; the signed
 attestations in the registry are the authoritative ones, and `SHA256SUMS`
 protects only the download, it is not signed itself.
@@ -270,13 +270,18 @@ The signatures and attestations are created with cosign v2, in the legacy
 below.
 
 A valid signature proves that the artifact was produced by that workflow of the
-`jabbas/secretspec-operator` repository for exactly that tag. The identity to
+`jabbas/generated-secrets-operator` repository for exactly that tag. The identity to
 check is:
 
 | Property | Value |
 |---|---|
-| Certificate identity | `https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/<tag>` |
+| Certificate identity | `https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/<tag>` |
 | OIDC issuer | `https://token.actions.githubusercontent.com` |
+
+> **Renamed in 0.2.0:** releases up to `0.1.5` were published as
+> `secretspec-operator` (image, charts, release assets and signing identity under
+> that name); verify those with the old names. Everything on this page uses the
+> new names.
 
 > **Legacy tag:** `0.1.0` was released under the tag `v0.1.0` (image
 > `:v0.1.0`, signing identity `refs/tags/v0.1.0`). Later releases use plain
@@ -310,23 +315,23 @@ also on a release candidate (`revision` is the commit); releases up to 0.1.3
 label a candidate with its own tag.
 
 Set the variables for the release you are installing. For the current release,
-`0.1.5`:
+`0.2.0`:
 
 ```sh
-TAG=0.1.5                  # the git/image tag (plain semver)
-CHART_VERSION=0.1.5        # the chart version
-IDENTITY="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+TAG=0.2.0                  # the git/image tag (plain semver)
+CHART_VERSION=0.2.0        # the chart version
+IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 ```
 
 From 0.1.1 on, `<tag>` is the plain version and equals the chart version
-(`0.1.5-rc.1` for a release candidate). For the legacy `0.1.0` use
+(`0.2.0-rc.1` for a release candidate). For the legacy `0.1.0` use
 `TAG=v0.1.0` and `CHART_VERSION=0.1.0`.
 
 Verify the image (the tag resolves to the multi-arch index, which is signed):
 
 ```sh
-cosign verify "ghcr.io/jabbas/secretspec-operator:${TAG}" \
+cosign verify "ghcr.io/jabbas/generated-secrets-operator:${TAG}" \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
 ```
@@ -334,7 +339,7 @@ cosign verify "ghcr.io/jabbas/secretspec-operator:${TAG}" \
 Verify the chart:
 
 ```sh
-cosign verify "ghcr.io/jabbas/charts/secretspec-operator:${CHART_VERSION}" \
+cosign verify "ghcr.io/jabbas/charts/generated-secrets-operator:${CHART_VERSION}" \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
 ```
@@ -346,22 +351,22 @@ the attestation of that digest:
 
 ```sh
 ARCH=amd64   # or arm64
-PLATFORM_DIGEST="$(docker buildx imagetools inspect "ghcr.io/jabbas/secretspec-operator:${TAG}" --raw \
+PLATFORM_DIGEST="$(docker buildx imagetools inspect "ghcr.io/jabbas/generated-secrets-operator:${TAG}" --raw \
   | jq -r --arg arch "${ARCH}" '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest')"
 
-cosign verify-attestation "ghcr.io/jabbas/secretspec-operator@${PLATFORM_DIGEST}" \
+cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_DIGEST}" \
   --type spdxjson \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
 ```
 
-(`crane manifest "ghcr.io/jabbas/secretspec-operator:${TAG}"` prints the same
+(`crane manifest "ghcr.io/jabbas/generated-secrets-operator:${TAG}"` prints the same
 index if you do not have Docker.) The attestation output is a stream of signed
 envelopes whose `payload` is the base64-encoded in-toto statement; to read the
 SBOM itself:
 
 ```sh
-cosign verify-attestation "ghcr.io/jabbas/secretspec-operator@${PLATFORM_DIGEST}" \
+cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_DIGEST}" \
   --type spdxjson \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}" \
@@ -386,7 +391,7 @@ convenience channel with a **weaker trust model** than the OCI chart:
   the package behind the URL in it, and does not check the index digest.
 - **The index holds no packages.** Every entry points at the chart package
   attached to the GitHub Release of this repository
-  (`…/releases/download/<tag>/secretspec-operator-<version>.tgz`) and carries
+  (`…/releases/download/<tag>/generated-secrets-operator-<version>.tgz`) and carries
   its SHA-256. Anyone who can write to `jabbas/helm-charts` (or the Pages site)
   can point a version at a different package; the only credential that can do so
   automatically is a fine-grained token limited to that repository, held in the
@@ -411,7 +416,7 @@ For automated installs that must be checked, use the OCI channel (Flux:
 
 Please report suspected vulnerabilities **privately** through GitHub private
 vulnerability reporting: open
-<https://github.com/jabbas/secretspec-operator/security/advisories/new>. Do not
+<https://github.com/jabbas/generated-secrets-operator/security/advisories/new>. Do not
 open a public issue or pull request for a security problem. Include the version,
 a description and, if possible, a way to reproduce it; never include real
 secrets.

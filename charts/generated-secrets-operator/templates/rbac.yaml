@@ -1,0 +1,116 @@
+{{/* SPDX-License-Identifier: Apache-2.0 */}}
+{{- /*
+RBAC of design §9. Nothing beyond these rules may be granted.
+- watchNamespaces empty: ClusterRole + ClusterRoleBinding (all namespaces).
+- watchNamespaces listed: a Role + RoleBinding in each listed namespace and
+  no cluster-scoped RBAC at all.
+- Leases: a Role + RoleBinding in the release namespace (leader election).
+*/}}
+{{- define "generated-secrets-operator.rules" -}}
+- apiGroups: ["generatedsecrets.jabbas.eu"]
+  resources: ["generatedsecrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["generatedsecrets.jabbas.eu"]
+  resources: ["generatedsecrets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["generatedsecrets.jabbas.eu"]
+  resources: ["generatedsecrets/finalizers"]
+  verbs: ["update"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch", "create", "patch", "update"]
+- apiGroups: ["events.k8s.io"]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+{{- end }}
+{{- define "generated-secrets-operator.subjects" -}}
+- kind: ServiceAccount
+  name: {{ include "generated-secrets-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- $fullname := include "generated-secrets-operator.fullname" . }}
+{{- if empty .Values.watchNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
+rules:
+  {{- include "generated-secrets-operator.rules" . | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $fullname }}
+subjects:
+  {{- include "generated-secrets-operator.subjects" . | nindent 2 }}
+{{- else }}
+{{- range $namespace := .Values.watchNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "generated-secrets-operator.labels" $ | nindent 4 }}
+rules:
+  {{- include "generated-secrets-operator.rules" $ | nindent 2 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $fullname }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "generated-secrets-operator.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $fullname }}
+subjects:
+  {{- include "generated-secrets-operator.subjects" $ | nindent 2 }}
+{{- end }}
+{{- end }}
+{{- if .Values.leaderElection.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $fullname }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: [{{ include "generated-secrets-operator.fullname" . | quote }}]
+    verbs: ["get", "update"]
+  # `create` cannot be limited by resourceNames (the name is not known to
+  # authorization before the object exists).
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $fullname }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $fullname }}-leader-election
+subjects:
+  {{- include "generated-secrets-operator.subjects" . | nindent 2 }}
+{{- end }}

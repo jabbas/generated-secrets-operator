@@ -1,0 +1,11 @@
+# expect: encoding is required with bytes and only allowed with bytes
+# layer: cel
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: i05-encoding-without-bytes
+  namespace: test
+spec:
+  fields:
+    - name: token
+      encoding: hex

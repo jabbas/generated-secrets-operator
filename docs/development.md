@@ -24,21 +24,21 @@ cargo deny check
 cargo xtask crdgen --check   # `cargo xtask crdgen` regenerates the CRD
 ```
 
-The CRD (`charts/secretspec-operator/files/crd/secretspecs.secretspec.jabbas.eu.yaml`)
+The CRD (`charts/generated-secrets-operator/files/crd/generatedsecrets.generatedsecrets.jabbas.eu.yaml`)
 is generated from the Rust types and rules; never edit it by hand.
 
 ## Test layers
 
-Invalid fixtures live in `crates/secretspec-api/tests/fixtures/` and declare
+Invalid fixtures live in `crates/generated-secrets-api/tests/fixtures/` and declare
 which layer rejects them (`# layer: cel|schema`, see `tests/common/mod.rs`).
 
 | Layer | Command | Needs |
 |-------|---------|-------|
-| Schema structure, CRD golden checks | `cargo test -p secretspec-api --test schema` | nothing |
-| CEL rules (client-side evaluation of the generated rules) | `cargo test -p secretspec-api --test cel` | nothing |
-| `resolve()` runtime validation and defaults | `cargo test -p secretspec-api --test resolve` | nothing |
+| Schema structure, CRD golden checks | `cargo test -p generated-secrets-api --test schema` | nothing |
+| CEL rules (client-side evaluation of the generated rules) | `cargo test -p generated-secrets-api --test cel` | nothing |
+| `resolve()` runtime validation and defaults | `cargo test -p generated-secrets-api --test resolve` | nothing |
 | Real API server (CRD acceptance, CEL cost, schema, defaulting, immutability) | see below | a cluster |
-| Operator unit tests (config, foreign-key view, outcome, leader logic, metrics) | `cargo test -p secretspec-operator` | nothing |
+| Operator unit tests (config, foreign-key view, outcome, leader logic, metrics) | `cargo test -p generated-secrets-operator` | nothing |
 | Operator against a real API server (reconcile, RBAC, leader election) | see [Operator integration tests](#operator-integration-tests-on-kind) | a cluster |
 | Helm chart + image, end to end (examples, upgrade, uninstall, namespace mode) | see [End-to-end tests](#end-to-end-tests-chart--image-on-kind) | a cluster and the image |
 
@@ -49,10 +49,10 @@ the Rust types/rules are fixed.
 ## Server-side validation on kind
 
 The suite applies the generated CRD (server-side apply, field manager
-`secretspec-test`), then dry-run-creates every fixture in a throw-away
-namespace `secretspec-crd-test-<random>`, which it deletes afterwards. The CRD
+`generated-secrets-test`), then dry-run-creates every fixture in a throw-away
+namespace `generated-secrets-crd-test-<random>`, which it deletes afterwards. The CRD
 is left installed. **Use a disposable cluster** — never point
-`SECRETSPEC_TEST_KUBECONFIG` at a cluster you care about. The tests panic if
+`GENERATED_SECRETS_TEST_KUBECONFIG` at a cluster you care about. The tests panic if
 the variable is unset.
 
 CI runs the suite on Kubernetes 1.34 and 1.37 (kind node images pinned by
@@ -61,20 +61,20 @@ published for the kind release pinned there:
 
 ```sh
 # Kubernetes 1.34
-kind create cluster --name secretspec-api-134 \
+kind create cluster --name generated-secrets-api-134 \
   --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d \
-  --kubeconfig "$TMPDIR/secretspec-api-134.kubeconfig"
-SECRETSPEC_TEST_KUBECONFIG="$TMPDIR/secretspec-api-134.kubeconfig" \
-  cargo test -p secretspec-api --test server_validation -- --ignored --test-threads=1
-kind delete cluster --name secretspec-api-134
+  --kubeconfig "$TMPDIR/generated-secrets-api-134.kubeconfig"
+GENERATED_SECRETS_TEST_KUBECONFIG="$TMPDIR/generated-secrets-api-134.kubeconfig" \
+  cargo test -p generated-secrets-api --test server_validation -- --ignored --test-threads=1
+kind delete cluster --name generated-secrets-api-134
 
 # Kubernetes 1.37 (newest stable minor)
-kind create cluster --name secretspec-api-137 \
+kind create cluster --name generated-secrets-api-137 \
   --image kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5 \
-  --kubeconfig "$TMPDIR/secretspec-api-137.kubeconfig"
-SECRETSPEC_TEST_KUBECONFIG="$TMPDIR/secretspec-api-137.kubeconfig" \
-  cargo test -p secretspec-api --test server_validation -- --ignored --test-threads=1
-kind delete cluster --name secretspec-api-137
+  --kubeconfig "$TMPDIR/generated-secrets-api-137.kubeconfig"
+GENERATED_SECRETS_TEST_KUBECONFIG="$TMPDIR/generated-secrets-api-137.kubeconfig" \
+  cargo test -p generated-secrets-api --test server_validation -- --ignored --test-threads=1
+kind delete cluster --name generated-secrets-api-137
 ```
 
 `--kubeconfig <file>` makes kind write the kubeconfig to that file instead of
@@ -102,7 +102,7 @@ Stop the machine afterwards with `podman machine stop` if you do not need it.
 ### Running a single server test
 
 ```sh
-SECRETSPEC_TEST_KUBECONFIG=… cargo test -p secretspec-api --test server_validation \
+GENERATED_SECRETS_TEST_KUBECONFIG=… cargo test -p generated-secrets-api --test server_validation \
   invalid_fixtures_rejected -- --ignored --test-threads=1
 ```
 
@@ -114,13 +114,13 @@ The binary reads the usual kubeconfig (`KUBECONFIG`, else `~/.kube/config`).
 Point `KUBECONFIG` at the file kind wrote so that no other context is used:
 
 ```sh
-kind create cluster --name secretspec-dev \
+kind create cluster --name generated-secrets-dev \
   --image kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5 \
-  --kubeconfig "$TMPDIR/secretspec-dev.kubeconfig"
-export KUBECONFIG="$TMPDIR/secretspec-dev.kubeconfig"
+  --kubeconfig "$TMPDIR/generated-secrets-dev.kubeconfig"
+export KUBECONFIG="$TMPDIR/generated-secrets-dev.kubeconfig"
 kubectl apply --server-side \
-  -f charts/secretspec-operator/files/crd/secretspecs.secretspec.jabbas.eu.yaml
-cargo run -p secretspec-operator -- --leader-election false --log-format text \
+  -f charts/generated-secrets-operator/files/crd/generatedsecrets.generatedsecrets.jabbas.eu.yaml
+cargo run -p generated-secrets-operator -- --leader-election false --log-format text \
   --http-bind 127.0.0.1:8080
 ```
 
@@ -128,24 +128,24 @@ In a second shell (same `KUBECONFIG`):
 
 ```sh
 kubectl create namespace test
-kubectl apply -f crates/secretspec-api/tests/fixtures/valid/v01-minimal-fields.yaml
-kubectl -n test get secretspecs,secrets
+kubectl apply -f crates/generated-secrets-api/tests/fixtures/valid/v01-minimal-fields.yaml
+kubectl -n test get generatedsecrets,secrets
 curl -s localhost:8080/readyz; curl -s localhost:8080/metrics
 ```
 
 Run as yourself, the operator has your (cluster-admin) rights; the integration
 suite below is what checks it with the real, minimal RBAC. With leader
 election on you also need `--lease-namespace` and `--pod-name` (macOS has no
-hostname file to fall back to). `kind delete cluster --name secretspec-dev`
+hostname file to fall back to). `kind delete cluster --name generated-secrets-dev`
 when done.
 
 ## Operator integration tests on kind
 
-`crates/secretspec-operator/tests/integration.rs` runs the operator
-in-process (`secretspec_operator::run`) against a real API server. Each test:
+`crates/generated-secrets-operator/tests/integration.rs` runs the operator
+in-process (`generated_secrets_operator::run`) against a real API server. Each test:
 
 - applies the generated CRD (left installed);
-- creates two namespaces `secretspec-it-<random>-a` and `-b`, a ServiceAccount
+- creates two namespaces `generated-secrets-it-<random>-a` and `-b`, a ServiceAccount
   in `-a` and exactly the RBAC of design §9 — a ClusterRole in cluster mode, or
   only Roles in `-a` in namespace mode; the Lease Role is always in `-a`;
 - runs the operator with a client that **impersonates** that ServiceAccount,
@@ -154,16 +154,20 @@ in-process (`secretspec_operator::run`) against a real API server. Each test:
   also when it fails.
 
 Same cluster requirements as the server suite (disposable cluster, Docker or
-Podman with `KIND_EXPERIMENTAL_PROVIDER=podman`); the same kind cluster can
-run both suites:
+Podman with `KIND_EXPERIMENTAL_PROVIDER=podman`). Both suites apply the CRD
+outside Helm and leave it installed, so they can share one kind cluster, but
+the [end-to-end suite](#end-to-end-tests-chart--image-on-kind) cannot: give it
+its own fresh cluster. CI follows the same rule and runs each suite on its own
+cluster (`generated-secrets-api-<k8s>`, `generated-secrets-operator-<k8s>`,
+`generated-secrets-e2e-<k8s>`):
 
 ```sh
-kind create cluster --name secretspec-op-134 \
+kind create cluster --name generated-secrets-operator-134 \
   --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d \
-  --kubeconfig "$TMPDIR/secretspec-op-134.kubeconfig"
-SECRETSPEC_TEST_KUBECONFIG="$TMPDIR/secretspec-op-134.kubeconfig" \
-  cargo test -p secretspec-operator --test integration -- --ignored --test-threads=1
-kind delete cluster --name secretspec-op-134
+  --kubeconfig "$TMPDIR/generated-secrets-operator-134.kubeconfig"
+GENERATED_SECRETS_TEST_KUBECONFIG="$TMPDIR/generated-secrets-operator-134.kubeconfig" \
+  cargo test -p generated-secrets-operator --test integration -- --ignored --test-threads=1
+kind delete cluster --name generated-secrets-operator-134
 ```
 
 and likewise with the 1.37 image. The suite takes about two minutes;
@@ -172,18 +176,18 @@ waits for two 30 s error retries. Tests must run with `--test-threads=1`:
 they share the process-wide log capture.
 
 The operator's log is captured (the namespace-mode test asserts that it has
-no `403`); set `SECRETSPEC_TEST_LOG=1` and add `--nocapture` to see it:
+no `403`); set `GENERATED_SECRETS_TEST_LOG=1` and add `--nocapture` to see it:
 
 ```sh
-SECRETSPEC_TEST_LOG=1 SECRETSPEC_TEST_KUBECONFIG=… \
-  cargo test -p secretspec-operator --test integration leader_election_single_active \
+GENERATED_SECRETS_TEST_LOG=1 GENERATED_SECRETS_TEST_KUBECONFIG=… \
+  cargo test -p generated-secrets-operator --test integration leader_election_single_active \
   -- --ignored --test-threads=1 --nocapture
 ```
 
 ## Building the image
 
 The image is the prebuilt static musl binary on `scratch` (`build/Containerfile`):
-it contains only `/secretspec-operator` and `/licenses/`, no OS packages, no
+it contains only `/generated-secrets-operator` and `/licenses/`, no OS packages, no
 shell, no CA bundle and no `/etc/passwd`. The binary needs none of them when
 run by the chart: in-cluster the API server CA comes from the mounted
 ServiceAccount (`ca.crt`), time is UTC, nothing is written to disk, and the
@@ -213,11 +217,11 @@ Build the binaries (stripped, `--locked`) into `target/dist/<arch>/`:
 ```sh
 cargo xtask dist --target x86_64-unknown-linux-musl --release    # target/dist/amd64/
 cargo xtask dist --target aarch64-unknown-linux-musl --release   # target/dist/arm64/
-file target/dist/*/secretspec-operator   # "statically linked" ELF per arch
+file target/dist/*/generated-secrets-operator   # "statically linked" ELF per arch
 ```
 
 The binary embeds its dependency list (cargo-auditable); the list survives
-stripping. To check it, `syft target/dist/amd64/secretspec-operator` lists the
+stripping. To check it, `syft target/dist/amd64/generated-secrets-operator` lists the
 Rust crates (about 270).
 
 The image also carries the licence texts of the third-party crates the
@@ -234,7 +238,7 @@ image:
 cargo xtask licenses
 ```
 
-The crates are those of `cargo tree -p secretspec-operator --edges normal` for
+The crates are those of `cargo tree -p generated-secrets-operator --edges normal` for
 both musl targets: 243 today, which includes about 20 proc-macro crates (normal
 dependencies for cargo; they run at build time and are listed anyway). Dev- and
 build-only dependencies, and features switched on only by dev-dependencies of
@@ -267,12 +271,12 @@ under emulation:
 cargo xtask licenses   # once per dependency change; the image copies target/dist/licenses/
 podman build --platform linux/amd64 \
   --build-arg VERSION=0.1.0-dev --build-arg REVISION="$(git rev-parse HEAD)" \
-  -f build/Containerfile -t secretspec-operator:dev .
-podman run --rm --read-only --user 65532:65532 secretspec-operator:dev --help
+  -f build/Containerfile -t generated-secrets-operator:dev .
+podman run --rm --read-only --user 65532:65532 generated-secrets-operator:dev --help
 ```
 
 The image has no shell, so `podman run … sh` and `podman exec` do not work; to
-look inside, export the filesystem (`podman create --name x secretspec-operator:dev
+look inside, export the filesystem (`podman create --name x generated-secrets-operator:dev
 && podman export x | tar -tv; podman rm x`).
 
 `.dockerignore` and `.containerignore` are identical (Docker and Podman read
@@ -281,34 +285,35 @@ licence bundle lives in `target/dist/licenses/`.
 
 ## End-to-end tests (chart + image) on kind
 
-`crates/secretspec-operator/tests/e2e.rs` installs the Helm chart from the
-working tree with the image built above, into namespace `secretspec-system`
+`crates/generated-secrets-operator/tests/e2e.rs` installs the Helm chart from the
+working tree with the image built above, into namespace `generated-secrets-system`
 (PSA `restricted`), and exercises it as a user would: every `examples/*.yaml`
 in a PSA-`restricted` namespace, `helm upgrade` and pod restart (values and
-Secret `resourceVersion`s unchanged), `helm uninstall` (CRD, SecretSpecs and
+Secret `resourceVersion`s unchanged), `helm uninstall` (CRD, GeneratedSecrets and
 Secrets stay), `watchNamespaces` mode (no 403s), and log redaction.
 
 The harness needs `helm` (or `$HELM`) on the `PATH`, a **disposable, fresh**
-cluster (the chart owns the CRD, so a cluster where the server or integration
-suite already applied the CRD fails with "invalid ownership metadata" —
-`kubectl delete crd secretspecs.secretspec.jabbas.eu` first), and the image
-loaded into it:
+cluster that no other suite has used (the chart owns the CRD, so a cluster
+where the server-side or integration suite already applied the CRD outside Helm
+fails with "invalid ownership metadata"; create a new cluster, or as a last
+resort `kubectl delete crd generatedsecrets.generatedsecrets.jabbas.eu` first),
+and the image loaded into it:
 
 ```sh
 cargo xtask dist --target x86_64-unknown-linux-musl --release
 cargo xtask licenses
 podman build --platform linux/amd64 -f build/Containerfile \
-  -t localhost/secretspec-operator:e2e .
-podman save -o "$TMPDIR/image.tar" localhost/secretspec-operator:e2e
+  -t localhost/generated-secrets-operator:e2e .
+podman save -o "$TMPDIR/image.tar" localhost/generated-secrets-operator:e2e
 
-kind create cluster --name secretspec-e2e-134 \
+kind create cluster --name generated-secrets-e2e-134 \
   --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d \
-  --kubeconfig "$TMPDIR/secretspec-e2e-134.kubeconfig"
-kind load image-archive "$TMPDIR/image.tar" --name secretspec-e2e-134
-SECRETSPEC_E2E_KUBECONFIG="$TMPDIR/secretspec-e2e-134.kubeconfig" \
-SECRETSPEC_E2E_IMAGE=localhost/secretspec-operator:e2e \
-  cargo test -p secretspec-operator --test e2e -- --ignored --test-threads=1
-kind delete cluster --name secretspec-e2e-134
+  --kubeconfig "$TMPDIR/generated-secrets-e2e-134.kubeconfig"
+kind load image-archive "$TMPDIR/image.tar" --name generated-secrets-e2e-134
+GENERATED_SECRETS_E2E_KUBECONFIG="$TMPDIR/generated-secrets-e2e-134.kubeconfig" \
+GENERATED_SECRETS_E2E_IMAGE=localhost/generated-secrets-operator:e2e \
+  cargo test -p generated-secrets-operator --test e2e -- --ignored --test-threads=1
+kind delete cluster --name generated-secrets-e2e-134
 ```
 
 (Docker: `docker build … --load` and `kind load docker-image`.) The image is
@@ -322,8 +327,8 @@ tests share one release.
 A release is a pushed annotated tag on `main`, in plain semver (semver.org, no
 `v` prefix): `X.Y.Z` or `X.Y.Z-rc.N`. `.github/workflows/release.yml` does
 everything else; nothing is published by hand. The tag, the image tag
-(`ghcr.io/jabbas/secretspec-operator:<tag>`), the chart version
-(`oci://ghcr.io/jabbas/charts/secretspec-operator`) and the chart `appVersion`
+(`ghcr.io/jabbas/generated-secrets-operator:<tag>`), the chart version
+(`oci://ghcr.io/jabbas/charts/generated-secrets-operator`) and the chart `appVersion`
 are the same string. No `latest` tag exists.
 
 `0.1.0` is the one exception: it was released (with `0.1.0-rc.1` and
@@ -340,12 +345,16 @@ job fail otherwise (items 1-3; item 4 is documentation, checked by nothing):
 
 1. `version` in `[workspace.package]` of `Cargo.toml` (then `cargo build` so
    `Cargo.lock` follows);
-2. `version` in `charts/secretspec-operator/Chart.yaml`;
-3. `appVersion` in `charts/secretspec-operator/Chart.yaml` (a quoted string);
+2. `version` in `charts/generated-secrets-operator/Chart.yaml`;
+3. `appVersion` in `charts/generated-secrets-operator/Chart.yaml` (a quoted string);
 4. the documentation that names the latest published release: the `TAG` and
    `CHART_VERSION` of the verify blocks in `docs/installation.md` and
    `docs/security.md`, and the `--version` of the install examples in
-   `README.md` and `docs/installation.md`. These are not checked by any gate;
+   `README.md`, `docs/installation.md` and the two install examples in
+   `charts/generated-secrets-operator/README.md`; also the Flux examples in
+   `docs/installation.md` (the `HelmRelease` `chart.spec.version`, the
+   `OCIRepository` `ref.tag` and the version in the `subject:` regex, for
+   example `…refs/tags/0\\.2\\.0$`). These are not checked by any gate;
    update them in the release pull request, so they point at a release that
    exists once the tag is pushed.
 
@@ -482,7 +491,7 @@ have succeeded (see "Job graph" below).
 | `image` | Downloads the three artifacts into `target/dist/{amd64,arm64,licenses}/` and restores the executable bit. Builds the multi-arch image and pushes it by digest (no tag), scans each platform image with grype (fails on a fixable high or critical finding), creates an SPDX SBOM per platform with syft, signs the index and the platform images with cosign, attests the SBOMs on the platform images, then creates the release tag (only if it is free or already points to that digest) and verifies it all with the documented commands. |
 | `smoke` | Runs the pushed image with `--help` on amd64 and on arm64 (QEMU). |
 | `promote` | Promote mode only; builds nothing. Resolves the digest of the candidate's tag; `cosign verify` with the candidate's identity (`…@refs/tags/X.Y.Z-rc.N`); asserts exactly linux/amd64 and linux/arm64, and the labels (`revision` = the tagged commit, `version` = `X.Y.Z`); scans both platforms again with grype (a finding means: fix it, cut a new candidate); creates the SBOMs with syft and attests them, then signs the index and the platform images, all with the final identity; tags `X.Y.Z` with the candidate's digest (same guard as `image`) and verifies by tag. No smoke test: the identical digest was smoked in the candidate's run. |
-| `chart` | Packages the chart at the release version (or, if that version is already published, pulls it), checks that it renders the image `ghcr.io/jabbas/secretspec-operator:<tag>`, pushes it if new, signs it and verifies the signature. In promote mode it first pulls and verifies the candidate's chart and asserts (`.github/scripts/chart-compare.sh`) that both have the same entries (path, type, mode, symlink target; no special files) with equal regular files, except `Chart.yaml`, which may differ only in `version` and `appVersion`. |
+| `chart` | Packages the chart at the release version (or, if that version is already published, pulls it), checks that it renders the image `ghcr.io/jabbas/generated-secrets-operator:<tag>`, pushes it if new, signs it and verifies the signature. In promote mode it first pulls and verifies the candidate's chart and asserts (`.github/scripts/chart-compare.sh`) that both have the same entries (path, type, mode, symlink target; no special files) with equal regular files, except `Chart.yaml`, which may differ only in `version` and `appVersion`. |
 | `release` | Creates the GitHub Release (pre-release for `-rc.N`) with generated notes, the chart package, the SBOMs (from `promote` or `image`) and `SHA256SUMS`. The notes say "Image promoted from `<rc tag>` without rebuilding (digest …)" or, after a `rebuild:` release, give the reason. |
 | `helm-index` | Adds the version to the HTTP Helm repository `jabbas/helm-charts` after checking the package against the signed OCI chart. See below. |
 
@@ -534,7 +543,7 @@ tests (`release-graph-check-test.sh`), on every pull request.
 chart to the classic Helm repository `https://jabbas.github.io/helm-charts`
 (repository `jabbas/helm-charts`, one root `index.yaml`, no packages). Every
 entry points at this release's asset
-`https://github.com/jabbas/secretspec-operator/releases/download/<tag>/secretspec-operator-<version>.tgz`,
+`https://github.com/jabbas/generated-secrets-operator/releases/download/<tag>/generated-secrets-operator-<version>.tgz`,
 so the job must run after the release exists. Release candidates are listed
 too; Helm and Flux hide pre-releases unless asked. In order, it:
 
@@ -556,7 +565,7 @@ too; Helm and Flux hide pre-releases unless asked. In order, it:
    the old document as data and must differ only by that entry and
    `generated`; anything else (a foreign chart, top-level fields, unknown
    fields) fails the job;
-4. commits as `secretspec-operator <version>` (`github-actions[bot]`) and pushes;
+4. commits as `generated-secrets-operator <version>` (`github-actions[bot]`) and pushes;
    the token is handed to that one `git push` through its environment and is
    never printed. A lost push race (another chart updated the index) is retried
    from the new remote state, at most 5 times, then the job fails;
@@ -624,26 +633,26 @@ the block is derived from it.
 set -euo pipefail
 TAG=X.Y.Z                  # the release tag whose helm-index job failed, e.g. 0.1.3
 VERSION="${TAG}"
-IDENTITY="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
-RELEASE_URL="https://github.com/jabbas/secretspec-operator/releases/download/${TAG}"
+RELEASE_URL="https://github.com/jabbas/generated-secrets-operator/releases/download/${TAG}"
 
 # 1. Fetch the release asset and check it exactly as the job does.
-curl -fsSL -o "secretspec-operator-${VERSION}.tgz" "${RELEASE_URL}/secretspec-operator-${VERSION}.tgz"
-SHA="$(sha256sum "secretspec-operator-${VERSION}.tgz" | cut -d' ' -f1)"
-CHART_DIGEST="$(cosign verify "ghcr.io/jabbas/charts/secretspec-operator:${VERSION}" \
+curl -fsSL -o "generated-secrets-operator-${VERSION}.tgz" "${RELEASE_URL}/generated-secrets-operator-${VERSION}.tgz"
+SHA="$(sha256sum "generated-secrets-operator-${VERSION}.tgz" | cut -d' ' -f1)"
+CHART_DIGEST="$(cosign verify "ghcr.io/jabbas/charts/generated-secrets-operator:${VERSION}" \
   --certificate-identity "${IDENTITY}" --certificate-oidc-issuer "${ISSUER}" \
   | jq -er '.[0].critical.image."docker-manifest-digest"')"
-LAYER="$(crane manifest "ghcr.io/jabbas/charts/secretspec-operator@${CHART_DIGEST}" \
+LAYER="$(crane manifest "ghcr.io/jabbas/charts/generated-secrets-operator@${CHART_DIGEST}" \
   | jq -er '.layers[] | select(.mediaType == "application/vnd.cncf.helm.chart.content.v1.tar+gzip") | .digest')"
 [ "${LAYER}" = "sha256:${SHA}" ] || { echo "MISMATCH with the signed OCI chart"; exit 1; }
-curl -fsSL "${RELEASE_URL}/SHA256SUMS" | grep -Fx "${SHA}  secretspec-operator-${VERSION}.tgz" || { echo "MISMATCH with SHA256SUMS"; exit 1; }
+curl -fsSL "${RELEASE_URL}/SHA256SUMS" | grep -Fx "${SHA}  generated-secrets-operator-${VERSION}.tgz" || { echo "MISMATCH with SHA256SUMS"; exit 1; }
 
 # 2. Add it, with the script of that tag (a checkout of this repository).
 git clone git@github.com:jabbas/helm-charts.git helm-charts-fresh
-git -C /path/to/secretspec-operator show "${TAG}:.github/scripts/helm-index.sh" > helm-index.sh
+git -C /path/to/generated-secrets-operator show "${TAG}:.github/scripts/helm-index.sh" > helm-index.sh
 source ./helm-index.sh
-publish_index helm-charts-fresh "$PWD/secretspec-operator-${VERSION}.tgz" "${VERSION}" "${SHA}" "${RELEASE_URL}"
+publish_index helm-charts-fresh "$PWD/generated-secrets-operator-${VERSION}.tgz" "${VERSION}" "${SHA}" "${RELEASE_URL}"
 wait_for_pages https://jabbas.github.io/helm-charts/index.yaml "${VERSION}" "${SHA}"
 )
 ```
@@ -657,8 +666,8 @@ a different digest.
 Follow [Security: Release signing and SBOM](security.md#release-signing-and-sbom)
 (`cosign verify` for the image and the chart, `cosign verify-attestation` for the
 SBOM of a platform image). Also check that the packages are public
-(`docker pull ghcr.io/jabbas/secretspec-operator:<tag>` and `helm pull
-oci://ghcr.io/jabbas/charts/secretspec-operator --version <version>` work
+(`docker pull ghcr.io/jabbas/generated-secrets-operator:<tag>` and `helm pull
+oci://ghcr.io/jabbas/charts/generated-secrets-operator --version <version>` work
 without logging in; `helm-index` reads the chart manifest anonymously too) and
 that a pre-release is marked as such. For the HTTP channel, run the digest-chain
 recipe in [Installation](installation.md#what-is-and-is-not-verified) for the new
@@ -666,8 +675,8 @@ version.
 
 ### One-time setup and maintenance
 
-- **Package visibility.** After the first release, the `secretspec-operator`
-  container package and the `charts/secretspec-operator` package on ghcr.io must
+- **Package visibility.** After the first release, the `generated-secrets-operator`
+  container package and the `charts/generated-secrets-operator` package on ghcr.io must
   be public and linked to this repository (package settings). Without that,
   users cannot pull or verify them anonymously.
 - **`HELM_CHARTS_TOKEN` (Environment `helm-charts`).** The only credential that

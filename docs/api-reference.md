@@ -1,28 +1,28 @@
 # API reference
 
-Group `secretspec.jabbas.eu`, version `v1alpha1`, kind `SecretSpec`,
-namespaced. Plural `secretspecs`, short name `ss`; the `status` subresource is
-enabled.
+Group `generatedsecrets.jabbas.eu`, version `v1alpha1`, kind `GeneratedSecret`,
+namespaced. Plural `generatedsecrets`, short name `gensecret`; the `status`
+subresource is enabled.
 
 ```sh
-kubectl get secretspecs          # or: kubectl get ss
-kubectl explain secretspec.spec  # field documentation, straight from the CRD
+kubectl get generatedsecrets          # or: kubectl get gensecret
+kubectl explain generatedsecret.spec  # field documentation, straight from the CRD
 ```
 
 Printer columns: `READY` (the `Ready` condition status), `KIND`
 (`Fields`, `SSHKeyPair` or `BasicAuth`), `NEXT ROTATION` (the RFC 3339 timestamp of
 `status.nextRotationTime`, empty without a rotation) and `AGE`.
 
-One `SecretSpec` describes **exactly one kind of secret**: set exactly one of
+One `GeneratedSecret` describes **exactly one kind of secret**: set exactly one of
 `fields`, `sshKeyPair` or `basicAuth`. An application that needs a password and
-an SSH key uses two `SecretSpec`s, which produce two Secrets. The generated
-Secret always has the **same name and namespace** as the `SecretSpec`, so
+an SSH key uses two `GeneratedSecret`s, which produce two Secrets. The generated
+Secret always has the **same name and namespace** as the `GeneratedSecret`, so
 `metadata.name` must be a valid Secret name of **at most 63 characters** (it is
 also used as a label value).
 
 ```yaml
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
 metadata:
   name: app-db
 spec:
@@ -46,17 +46,17 @@ stored object by the API server (`deletionPolicy`, `secret.type`,
 `sshKeyPair.algorithm`, every `keys.*`, `basicAuth.password: {}`). The others are
 *resolved* by the operator and deliberately **not** written into the object:
 `length` (32), `charset` (`alphanumeric`), `rsaBits` (4096), `ecdsaCurve`
-(`P-256`) and the SSH `comment` (`<name>@<namespace>`). `kubectl get ss -o yaml`
+(`P-256`) and the SSH `comment` (`<name>@<namespace>`). `kubectl get gensecret -o yaml`
 therefore shows only what you set plus the written defaults.
 
 ## `spec`
 
 | Field | Type | Default | Rules |
 |---|---|---|---|
-| `deletionPolicy` | `Delete` \| `Retain` | `Delete` | What happens to the Secret when the `SecretSpec` is deleted. See [`deletionPolicy`](#deletionpolicy). |
+| `deletionPolicy` | `Delete` \| `Retain` | `Delete` | What happens to the Secret when the `GeneratedSecret` is deleted. See [`deletionPolicy`](#deletionpolicy). |
 | `rotation.interval` | string | none (no rotation) | `^[1-9][0-9]*(m\|h\|d)$`, between `1h` and `3650d` (`60m` is the minimum in minutes). Examples: `24h`, `90d`. |
 | `secret.type` | string | `Opaque` | 1–253 characters. Allowed: `Opaque`, `kubernetes.io/basic-auth`, `kubernetes.io/ssh-auth`, or a custom type that does not start with `kubernetes.io/` and is not `bootstrap.kubernetes.io/token`. **Immutable.** `kubernetes.io/basic-auth` needs `basicAuth` with the default `username`/`password` keys; `kubernetes.io/ssh-auth` needs `sshKeyPair` with the default `ssh-privatekey` key. |
-| `secret.labels` | map string→string | `{}` | At most 32 entries; keys at most 253 characters, values at most 4096. Keys under `secretspec.jabbas.eu/` and the key `app.kubernetes.io/managed-by` are **reserved and rejected**. |
+| `secret.labels` | map string→string | `{}` | At most 32 entries; keys at most 253 characters, values at most 4096. Keys under `generatedsecrets.jabbas.eu/` and the key `app.kubernetes.io/managed-by` are **reserved and rejected**. |
 | `secret.annotations` | map string→string | `{}` | Same limits and reserved keys as `secret.labels`. |
 | `data` | map string→string | `{}` | Literal values copied verbatim. At most 64 entries, values at most 65 536 characters. Keys must be valid Secret key names (below) and must not collide with a generated key. |
 | `fields` | list | — | 1–32 entries; `name` is the list key. See [`fields`](#fields). |
@@ -69,14 +69,14 @@ start with `..`. Keys must be distinct within one Secret.
 
 ### `deletionPolicy`
 
-| Policy | The Secret has | When the `SecretSpec` is deleted |
+| Policy | The Secret has | When the `GeneratedSecret` is deleted |
 |---|---|---|
-| `Delete` (default) | a controller `ownerReference` to the `SecretSpec` | Kubernetes garbage-collects the Secret. |
+| `Delete` (default) | a controller `ownerReference` to the `GeneratedSecret` | Kubernetes garbage-collects the Secret. |
 | `Retain` | **no** `ownerReference` | The Secret is left untouched. |
 
 There is no finalizer in either mode, so the operator being down never blocks
 deleting a namespace. Changing the policy on a live object adds or removes the
-`ownerReference` at the next reconcile. A `SecretSpec` that is created while a
+`ownerReference` at the next reconcile. A `GeneratedSecret` that is created while a
 **retained** Secret with the same name exists *adopts* it and keeps every value
 whose definition is unchanged; see [Security](security.md#adoption). Guidance on
 choosing the policy is in [Operations](operations.md#deletionpolicy-and-reinstalls).
@@ -181,7 +181,7 @@ messages.
 | `sshKeyPair.keys`, `basicAuth.keys` | `secret key names in keys must be distinct` |
 | `spec` | `data keys must not collide with generated keys` |
 | `data` | `data keys must be valid Secret key names: [-._a-zA-Z0-9]+, at most 253 characters, not '.' and not starting with '..'` |
-| `secret.labels`, `secret.annotations` | `label and annotation keys must be at most 253 characters; keys under secretspec.jabbas.eu/ and app.kubernetes.io/managed-by are reserved` |
+| `secret.labels`, `secret.annotations` | `label and annotation keys must be at most 253 characters; keys under generatedsecrets.jabbas.eu/ and app.kubernetes.io/managed-by are reserved` |
 | root | `metadata.name must be at most 63 characters because it is used as a label value` |
 | `secret.type` | `secret.type must be Opaque, kubernetes.io/basic-auth, kubernetes.io/ssh-auth or a custom type outside kubernetes.io/ (bootstrap tokens are not allowed)` |
 | `spec` | `type kubernetes.io/basic-auth requires basicAuth with keys.username "username" and keys.password "password"` |
@@ -216,40 +216,44 @@ The message is prefixed with the field path, e.g.
 | Status | Reason | Meaning |
 |---|---|---|
 | `True` | `Generated` | The Secret matches the spec. |
-| `False` | `Conflict` | A Secret with the target name exists and is not managed by this `SecretSpec` (or has a different type). Nothing is written. |
+| `False` | `Conflict` | A Secret with the target name exists and is not managed by this `GeneratedSecret` (or has a different type). Nothing is written. |
 | `False` | `InvalidSpec` | Runtime validation failed; the message says what is wrong. |
 | `False` | `ApplyFailed` | Writing the Secret failed. Retried every 30 seconds. |
 | `False` | `GenerationFailed` | Generating a value failed inside the operator (SSH library, bcrypt). Retried every 30 seconds. |
-| `False` | `WaitingForGarbageCollection` | The Secret still belongs to a deleted `SecretSpec` of the same name; the operator waits (re-checking every 5 seconds) instead of adopting it. |
+| `False` | `WaitingForGarbageCollection` | The Secret still belongs to a deleted `GeneratedSecret` of the same name; the operator waits (re-checking every 5 seconds) instead of adopting it. |
 
 ## The generated Secret
 
-- **Name and namespace:** the same as the `SecretSpec`.
+- **Name and namespace:** the same as the `GeneratedSecret`.
 - **Type:** `spec.secret.type` (default `Opaque`).
 - **Data:** the `data` literals plus the generated keys.
 - **Labels:**
-  - `app.kubernetes.io/managed-by: secretspec-operator`
-  - `secretspec.jabbas.eu/spec-name: <SecretSpec name>`
+  - `app.kubernetes.io/managed-by: generated-secrets-operator`
+  - `generatedsecrets.jabbas.eu/owner-name: <GeneratedSecret name>`
   - plus `spec.secret.labels`
 - **Annotations:**
 
   | Annotation | Content |
   |---|---|
-  | `secretspec.jabbas.eu/fingerprints` | JSON map from generation slot (`field/<name>`, `ssh/keypair`, `basic-auth/password`, `basic-auth/htpasswd`) to the SHA-256 of the slot's resolved parameters. Decides whether a value is still valid. It is derived from the parameters, not from any generated value (the htpasswd slot uses a keyed MAC so that it cannot be used to test password guesses); see [Fingerprint format](fingerprints.md). |
-  | `secretspec.jabbas.eu/generated-at` | RFC 3339 time of the last full generation; the rotation anchor. |
-  | `secretspec.jabbas.eu/spec-uid` | UID of the `SecretSpec` that currently owns the Secret. |
-  | `secretspec.jabbas.eu/keys` | JSON map from role (`ssh/private-key`, `ssh/public-key`, `basic-auth/username`, `basic-auth/password`, `basic-auth/htpasswd`) to the Secret key that holds it; absent for `fields`. Lets a `keys.*` rename move a value. |
+  | `generatedsecrets.jabbas.eu/fingerprints` | JSON map from generation slot (`field/<name>`, `ssh/keypair`, `basic-auth/password`, `basic-auth/htpasswd`) to the SHA-256 of the slot's resolved parameters. Decides whether a value is still valid. It is derived from the parameters, not from any generated value (the htpasswd slot uses a keyed MAC so that it cannot be used to test password guesses); see [Fingerprint format](fingerprints.md). |
+  | `generatedsecrets.jabbas.eu/generated-at` | RFC 3339 time of the last full generation; the rotation anchor. |
+  | `generatedsecrets.jabbas.eu/owner-uid` | UID of the `GeneratedSecret` that currently owns the Secret. |
+  | `generatedsecrets.jabbas.eu/keys` | JSON map from role (`ssh/private-key`, `ssh/public-key`, `basic-auth/username`, `basic-auth/password`, `basic-auth/htpasswd`) to the Secret key that holds it; absent for `fields`. Lets a `keys.*` rename move a value. |
   | plus | `spec.secret.annotations` |
 
   Do not edit these annotations by hand; the operator reads them back.
-- **Owner reference:** a controller reference to the `SecretSpec` for
+
+  "Owner" in `owner-name` and `owner-uid` means the `GeneratedSecret` that
+  manages the Secret, whether or not an `ownerReference` exists (with
+  `deletionPolicy: Retain` there is none).
+- **Owner reference:** a controller reference to the `GeneratedSecret` for
   `deletionPolicy: Delete`; none for `Retain`.
-- **Writes:** server-side apply with field manager `secretspec-operator`. Keys
+- **Writes:** server-side apply with field manager `generated-secrets-operator`. Keys
   that the spec no longer produces are removed; keys added to the Secret by
   other field managers are left alone.
 
 The operator never adopts, overwrites or deletes a Secret that lacks the
-`app.kubernetes.io/managed-by: secretspec-operator` label.
+`app.kubernetes.io/managed-by: generated-secrets-operator` label.
 
 ## Behaviour table
 
@@ -258,20 +262,20 @@ kept.
 
 | # | Situation | Result |
 |---|---|---|
-| 1 | New `SecretSpec` | The Secret is created with generated values. |
+| 1 | New `GeneratedSecret` | The Secret is created with generated values. |
 | 2 | The definition of one generated key changes (e.g. `length` 32 → 40) | A new value for that key only. |
 | 3 | A generated key is added to / removed from the spec | Only the new key is generated / the key is removed. |
 | 4 | A literal in `data` changes | The literal is updated; generated values are stable. |
 | 5 | `deletionPolicy`, `secret.labels`, `secret.annotations`, the SSH `comment` or `basicAuth.username` changes | Nothing is regenerated. A new comment rewrites the public-key line; a new username recomputes the htpasswd line with the same password. |
-| 6 | Labels or annotations of the `SecretSpec` itself change (e.g. a chart-version label bump) | Nothing happens. Only changes to `spec` count. |
+| 6 | Labels or annotations of the `GeneratedSecret` itself change (e.g. a chart-version label bump) | Nothing happens. Only changes to `spec` count. |
 | 7 | Operator restart or upgrade, re-apply of an identical manifest, cache loss, leader change | Nothing happens. |
 | 8 | A key is deleted from the Secret, or emptied | That key is regenerated. |
 | 9 | The Secret is deleted | Everything is regenerated. This is **manual rotation**. Literals are unchanged. |
 | 10 | `rotation.interval` has elapsed since `generated-at` | All generated keys (the SSH key pair included) are regenerated at once and the clock restarts. Missed intervals coalesce into one rotation. |
-| 11 | Rotation is enabled on an existing Secret, or no rotation is scheduled yet (`status.nextRotationTime` is absent: rotation newly enabled, status lost, or a new `SecretSpec` adopting a retained Secret) | No immediate rotation. The schedule starts when the operator first observes it: the first rotation falls one interval after that moment (or after `generated-at`, if that is not yet due), without a `Rotated` Event. |
+| 11 | Rotation is enabled on an existing Secret, or no rotation is scheduled yet (`status.nextRotationTime` is absent: rotation newly enabled, status lost, or a new `GeneratedSecret` adopting a retained Secret) | No immediate rotation. The schedule starts when the operator first observes it: the first rotation falls one interval after that moment (or after `generated-at`, if that is not yet due), without a `Rotated` Event. |
 | 12 | `rotation` is removed | The schedule is disabled; values are stable. |
-| 13 | The `SecretSpec` is deleted | `Delete`: the Secret is garbage-collected. `Retain`: the Secret stays. |
-| 14 | A `SecretSpec` is re-created while a retained Secret exists | The Secret is adopted; matching values are kept; no immediate rotation (see row 11). |
+| 13 | The `GeneratedSecret` is deleted | `Delete`: the Secret is garbage-collected. `Retain`: the Secret stays. |
+| 14 | A `GeneratedSecret` is re-created while a retained Secret exists | The Secret is adopted; matching values are kept; no immediate rotation (see row 11). |
 | 15 | A Secret with that name exists and is not managed by the operator | `Conflict`; nothing is written. |
 | 16 | Fingerprint metadata is lost (annotation missing, not JSON, or an entry invalid) | Every present value is kept, the fingerprints are re-stamped from the spec, and a Warning `FingerprintsReset` is emitted. Lost metadata never rotates. |
 | 17 | `keys.*` is renamed | The value moves to the new key name; nothing is regenerated. |

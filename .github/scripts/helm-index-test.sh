@@ -13,7 +13,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
-chart_dir="$root/charts/secretspec-operator"
+chart_dir="$root/charts/generated-secrets-operator"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -62,7 +62,7 @@ cp seed-pkg/index.yaml seed/index.yaml
 yq -i '
   .annotations = {"example.com/note": "keep"}
   | .serverInfo = {"contextPath": "/helm"}
-  | (.entries.secretspec-operator[] | select(.version == "0.1.0"))."x-unknown" = {"keep": ["me", 1]}
+  | (.entries.generated-secrets-operator[] | select(.version == "0.1.0"))."x-unknown" = {"keep": ["me", 1]}
   | .entries.other-chart = [
       {"name": "other-chart", "version": "1.0.0", "apiVersion": "v2", "created": "2026-01-01T00:00:00Z",
        "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -75,34 +75,34 @@ git -C seed push -q "$work/remote.git" HEAD:main
 git clone -q remote.git repo
 
 package "$V"
-tgz="pkg/secretspec-operator-$V.tgz"
+tgz="pkg/generated-secrets-operator-$V.tgz"
 digest="$(sha "$tgz")"
-before="$(yq '.entries.secretspec-operator | length' repo/index.yaml)"
+before="$(yq '.entries.generated-secrets-operator | length' repo/index.yaml)"
 # The whole document as data, without the chart's version $2 and `generated`,
 # independent of the library's own comparison (jq, not yq).
 doc() {
   yq -o=json "$1" | jq -S -c --arg v "$2" '
     del(.generated)
-    | .entries |= with_entries(.value |= (map(select(.name != "secretspec-operator" or .version != $v)) | sort_by(.version)))'
+    | .entries |= with_entries(.value |= (map(select(.name != "generated-secrets-operator" or .version != $v)) | sort_by(.version)))'
 }
 
 # 1. A new version is added, committed by the bot, and pushed.
 f=$failures
 publish_index repo "$tgz" "$V" "$digest" "$URL_BASE" 3
 git -C remote.git show main:index.yaml > got.yaml
-[[ "$(git -C remote.git log -1 --format=%s main)" == "secretspec-operator $V" ]] || fail "1: commit subject"
+[[ "$(git -C remote.git log -1 --format=%s main)" == "generated-secrets-operator $V" ]] || fail "1: commit subject"
 [[ "$(git -C remote.git log -1 --format=%an main)" == "github-actions[bot]" ]] || fail "1: commit author"
-[[ "$(yq '.entries.secretspec-operator | length' got.yaml)" == "$((before + 1))" ]] || fail "1: entry count"
+[[ "$(yq '.entries.generated-secrets-operator | length' got.yaml)" == "$((before + 1))" ]] || fail "1: entry count"
 [[ "$(index_entry_digest got.yaml "$V")" == "$digest" ]] || fail "1: digest"
-[[ "$(V=$V yq '.entries.secretspec-operator[] | select(.version == strenv(V)) | .urls[0]' got.yaml)" \
-  == "$URL_BASE/secretspec-operator-$V.tgz" ]] || fail "1: url"
+[[ "$(V=$V yq '.entries.generated-secrets-operator[] | select(.version == strenv(V)) | .urls[0]' got.yaml)" \
+  == "$URL_BASE/generated-secrets-operator-$V.tgz" ]] || fail "1: url"
 [[ "$(doc got.yaml "$V")" == "$(doc seed-index.yaml "$V")" ]] || fail "1: the document changed besides the new entry"
 [[ "$(yq '.annotations."example.com/note"' got.yaml)" == keep ]] || fail "1: top-level annotations lost"
 [[ "$(yq '.serverInfo.contextPath' got.yaml)" == /helm ]] || fail "1: serverInfo lost"
 [[ "$(yq '.entries.other-chart | length' got.yaml)" == 2 ]] || fail "1: the foreign chart changed"
 [[ "$(yq '.entries.other-chart[1] | has("apiVersion")' got.yaml)" == false ]] || fail "1: a foreign entry was normalised"
 [[ "$(yq '.entries.other-chart[0]."x-custom".a[1]' got.yaml)" == 2 ]] || fail "1: unknown foreign fields lost"
-[[ "$(yq '(.entries.secretspec-operator[] | select(.version == "0.1.0"))."x-unknown".keep[0]' got.yaml)" == me ]] || fail "1: unknown entry fields lost"
+[[ "$(yq '(.entries.generated-secrets-operator[] | select(.version == "0.1.0"))."x-unknown".keep[0]' got.yaml)" == me ]] || fail "1: unknown entry fields lost"
 [[ "$(git -C remote.git ls-tree -r --name-only main)" == "index.yaml" ]] || fail "1: the repository must hold only index.yaml"
 [[ -z "$(find repo -name '*.tgz' -not -path 'repo/.git/*')" ]] || fail "1: a package landed in the repository"
 [[ $failures == "$f" ]] && pass "1: new version is added, committed by the bot, only index.yaml changes"
@@ -138,22 +138,22 @@ expect_fail() {
 }
 # a: the listed version has no digest
 cp got.yaml broken/index.yaml
-V=$V yq -i '(.entries.secretspec-operator[] | select(.version == strenv(V))) |= del(.digest)' broken/index.yaml
+V=$V yq -i '(.entries.generated-secrets-operator[] | select(.version == strenv(V))) |= del(.digest)' broken/index.yaml
 expect_fail a update_index broken "$tgz" "$V" "$digest" "$URL_BASE"
 # b: the listed version has a malformed digest
-V=$V yq -i '(.entries.secretspec-operator[] | select(.version == strenv(V))).digest = "abc"' broken/index.yaml
+V=$V yq -i '(.entries.generated-secrets-operator[] | select(.version == strenv(V))).digest = "abc"' broken/index.yaml
 expect_fail b update_index broken "$tgz" "$V" "$digest" "$URL_BASE"
 # c: the version is listed twice
 cp got.yaml broken/index.yaml
-yq -i '.entries.secretspec-operator += [.entries.secretspec-operator[0]]' broken/index.yaml
+yq -i '.entries.generated-secrets-operator += [.entries.generated-secrets-operator[0]]' broken/index.yaml
 expect_fail c update_index broken "$tgz" "$V" "$digest" "$URL_BASE"
 # d: the merged index has an entry without the required fields
 cp repo/index.yaml old.yaml
-V=$V yq -i 'del(.entries.secretspec-operator[] | select(.version == strenv(V)))' old.yaml
+V=$V yq -i 'del(.entries.generated-secrets-operator[] | select(.version == strenv(V)))' old.yaml
 cp old.yaml new.yaml
-entry_url="$URL_BASE/secretspec-operator-$V.tgz"
+entry_url="$URL_BASE/generated-secrets-operator-$V.tgz"
 V=$V D=$digest U=$entry_url yq -i \
-  '.entries.secretspec-operator += [{"name": "secretspec-operator", "version": strenv(V), "urls": [strenv(U)], "digest": strenv(D)}]' new.yaml
+  '.entries.generated-secrets-operator += [{"name": "generated-secrets-operator", "version": strenv(V), "urls": [strenv(U)], "digest": strenv(D)}]' new.yaml
 expect_fail d check_new_index old.yaml new.yaml "$V" "$digest" "$entry_url"
 # e: not a Helm repository index
 echo "foo: bar" > broken/index.yaml
@@ -167,7 +167,7 @@ expect_fail f update_index repo "$tgz" "$V" "sha256:$digest" "$URL_BASE"
 f=$failures
 V2=0.1.1-rc.2
 package "$V2"
-tgz2="pkg/secretspec-operator-$V2.tgz"
+tgz2="pkg/generated-secrets-operator-$V2.tgz"
 digest2="$(sha "$tgz2")"
 git clone -q remote.git other
 cat > repo/.git/hooks/pre-push << EOF
@@ -194,7 +194,7 @@ grep -q 'push rejected' err.txt || fail "5: no push was rejected, the race did n
 f=$failures
 V3=0.1.1-rc.3
 package "$V3"
-tgz3="pkg/secretspec-operator-$V3.tgz"
+tgz3="pkg/generated-secrets-operator-$V3.tgz"
 digest3="$(sha "$tgz3")"
 printf '#!/usr/bin/env bash\nexit 1\n' > repo/.git/hooks/pre-push
 chmod +x repo/.git/hooks/pre-push
@@ -210,7 +210,7 @@ rm -f repo/.git/hooks/pre-push
 # 7. Whatever the new document changes besides the new entry fails, however
 #    small: foreign entries, unknown fields, top-level fields.
 f=$failures
-entry_url="$URL_BASE/secretspec-operator-$V.tgz"
+entry_url="$URL_BASE/generated-secrets-operator-$V.tgz"
 check_new_index seed-index.yaml got.yaml "$V" "$digest" "$entry_url" 2> err.txt || fail "7: the good document was rejected"
 tamper() {
   local name="$1" expr="$2"
@@ -225,9 +225,9 @@ tamper a 'del(.entries.other-chart[1])'
 tamper b '.entries.other-chart[1].apiVersion = "v2"'
 tamper c 'del(.annotations)'
 tamper d 'del(.serverInfo)'
-tamper e 'del((.entries.secretspec-operator[] | select(.version == "0.1.0"))."x-unknown")'
+tamper e 'del((.entries.generated-secrets-operator[] | select(.version == "0.1.0"))."x-unknown")'
 tamper f 'del(.entries.other-chart[0]."x-custom")'
-tamper g '(.entries.secretspec-operator[] | select(.version == "0.1.0")).digest = "00"'
+tamper g '(.entries.generated-secrets-operator[] | select(.version == "0.1.0")).digest = "00"'
 tamper h '.apiVersion = "v2"'
 tamper i '.entries.new-chart = [{"name": "new-chart", "version": "1.0.0"}]'
 tamper j '.entries.other-chart = []'
@@ -238,7 +238,7 @@ tamper j '.entries.other-chart = []'
 f=$failures
 V4=0.1.1-rc.4
 package "$V4"
-tgz4="pkg/secretspec-operator-$V4.tgz"
+tgz4="pkg/generated-secrets-operator-$V4.tgz"
 digest4="$(sha "$tgz4")"
 token=ghp_fake_test_token_0123456789
 HELM_CHARTS_TOKEN=$token git_authed -C repo config --get http.https://github.com/.extraheader > header.txt || fail "8: no header reached git"
@@ -273,6 +273,62 @@ wait_for_pages "$pages" "$V" "$other" 2 0 > /dev/null 2> err.txt || rc=$?
 [[ $rc == 2 ]] || fail "9: a different digest must return 2, got $rc"
 grep -q 'not ' err.txt || fail "9: error message"
 [[ $failures == "$f" ]] && pass "9: Pages check: listed -> 0, not listed -> 1, different digest -> 2"
+
+# 10. First publish of a chart into a shared index that has no key for it yet,
+#     next to a legacy entry. This is the state of the first release candidate
+#     of this repository: the shared index holds other-chart and the old
+#     secretspec-operator entries, and no generated-secrets-operator key.
+#     The name secretspec-operator below is a deliberate legacy fixture, an
+#     allowed exception in the final search (the old chart stays in the index).
+f=$failures
+V10=0.2.0-rc.1
+package "$V10"
+tgz10="pkg/generated-secrets-operator-$V10.tgz"
+digest10="$(sha "$tgz10")"
+legacy_digest="$(printf 'legacy' | sha256sum | cut -d' ' -f1)"
+other_digest="$(printf 'other' | sha256sum | cut -d' ' -f1)"
+git init -q --bare -b main legacy-remote.git
+git init -q -b main legacy-seed
+cat > legacy-seed/index.yaml << EOF
+apiVersion: v1
+generated: "2026-01-01T00:00:00Z"
+entries:
+  other-chart:
+    - name: other-chart
+      version: 1.0.0
+      apiVersion: v2
+      created: "2026-01-01T00:00:00Z"
+      digest: $other_digest
+      urls: [https://example.invalid/other-1.0.0.tgz]
+      x-custom: {a: [1, 2]}
+  secretspec-operator:
+    - name: secretspec-operator
+      version: 0.1.5
+      apiVersion: v2
+      appVersion: 0.1.5
+      created: "2026-01-01T00:00:00Z"
+      digest: $legacy_digest
+      urls: [https://example.invalid/secretspec-operator-0.1.5.tgz]
+EOF
+git -C legacy-seed -c user.name=seed -c user.email=seed@example.invalid add index.yaml
+git -C legacy-seed -c user.name=seed -c user.email=seed@example.invalid commit -q -m seed
+git -C legacy-seed push -q "$work/legacy-remote.git" HEAD:main
+git clone -q legacy-remote.git legacy-repo
+git -C legacy-remote.git show main:index.yaml > legacy-before.yaml
+publish_index legacy-repo "$tgz10" "$V10" "$digest10" "$BASE/$V10" 3 > /dev/null || fail "10: publish failed"
+git -C legacy-remote.git show main:index.yaml > legacy-after.yaml
+[[ "$(yq -o=json '.entries | keys | sort' legacy-after.yaml | jq -c .)" == '["generated-secrets-operator","other-chart","secretspec-operator"]' ]] \
+  || fail "10: the entry keys are not the expected three"
+[[ "$(yq '.entries."generated-secrets-operator" | length' legacy-after.yaml)" == 1 ]] || fail "10: not exactly one entry"
+[[ "$(index_entry_digest legacy-after.yaml "$V10")" == "$digest10" ]] || fail "10: the new entry has the wrong digest"
+[[ "$(yq -o=json '.entries."secretspec-operator"' legacy-before.yaml | jq -S -c .)" \
+  == "$(yq -o=json '.entries."secretspec-operator"' legacy-after.yaml | jq -S -c .)" ]] || fail "10: the legacy entries changed"
+[[ "$(yq -o=json '.entries."other-chart"' legacy-before.yaml | jq -S -c .)" \
+  == "$(yq -o=json '.entries."other-chart"' legacy-after.yaml | jq -S -c .)" ]] || fail "10: other-chart changed"
+[[ "$(yq -o=json 'del(.generated) | del(.entries."generated-secrets-operator")' legacy-before.yaml | jq -S -c .)" \
+  == "$(yq -o=json 'del(.generated) | del(.entries."generated-secrets-operator")' legacy-after.yaml | jq -S -c .)" ]] \
+  || fail "10: the document changed besides the new entry"
+[[ $failures == "$f" ]] && pass "10: first publish into a shared index with a legacy chart adds only the new key"
 
 if [[ $failures != 0 ]]; then
   echo "$failures check(s) failed" >&2

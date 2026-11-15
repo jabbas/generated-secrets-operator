@@ -1,8 +1,8 @@
-# SecretSpec Operator
+# Generated Secrets Operator
 
 A Kubernetes operator that creates `Secret`s with generated values — passwords,
 tokens, random bytes, SSH key pairs, basic-auth credentials — from a small
-custom resource, `SecretSpec`. You declare *what* the Secret should contain
+custom resource, `GeneratedSecret`. You declare *what* the Secret should contain
 inside your own Helm chart or manifests; the operator generates the values once
 and then leaves them alone. A value changes only when its definition changes,
 when you delete the Secret (or one key), or when a rotation you configured is
@@ -10,8 +10,8 @@ due. It does not change when the operator restarts, upgrades or loses its
 cache, or when you re-apply the same manifest.
 
 ```yaml
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
 metadata:
   name: app-admin            # the Secret gets the same name and namespace
 spec:
@@ -28,10 +28,10 @@ Run the `kubectl` commands from a clone of this repository.
 
 ```sh
 helm repo add jabbas https://jabbas.github.io/helm-charts
-helm install secretspec-operator jabbas/secretspec-operator --version 0.1.5 --namespace secretspec-system --create-namespace --wait
+helm install generated-secrets-operator jabbas/generated-secrets-operator --version 0.2.0 --namespace generated-secrets-system --create-namespace --wait
 kubectl apply -f examples/app-admin-password.yaml
-kubectl wait --for=condition=Ready secretspec/app-admin --timeout=60s
-kubectl get secretspec app-admin
+kubectl wait --for=condition=Ready gensecret/app-admin --timeout=60s
+kubectl get generatedsecrets app-admin
 kubectl get secret app-admin -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
@@ -40,24 +40,24 @@ Secret `app-admin` in the `default` namespace; the last three commands show that
 the operator made it ready and read the generated password.
 
 The HTTP repository is not signed. For the cosign-signed chart, install from
-`oci://ghcr.io/jabbas/charts/secretspec-operator`; both channels and how to
-verify them are in [Installation](docs/installation.md).
+`oci://ghcr.io/jabbas/charts/generated-secrets-operator`; both channels and how
+to verify them are in [Installation](docs/installation.md).
 
 ## Features
 
 - **Safe by default.** Values are generated once and stay stable; see the
   [behaviour table](docs/api-reference.md#behaviour-table).
-- **Three kinds of secret**, one per `SecretSpec`: `fields` (random strings,
-  tokens and encoded random bytes), `sshKeyPair` (ed25519, RSA or ECDSA) and
-  `basicAuth` (username, password and a bcrypt `htpasswd` line).
+- **Three kinds of secret**, one per `GeneratedSecret`: `fields` (random
+  strings, tokens and encoded random bytes), `sshKeyPair` (ed25519, RSA or
+  ECDSA) and `basicAuth` (username, password and a bcrypt `htpasswd` line).
 - **Per-key control.** Length, character set, excluded characters, minimum
   counts per character class, prefix and suffix; or N random bytes in hex,
   base64, base64url or base32.
 - **Optional scheduled rotation** (`rotation.interval`), and manual rotation by
   deleting the Secret.
 - **`deletionPolicy`:** `Delete` (default, garbage-collected with the
-  `SecretSpec`) or `Retain` (the Secret survives, and a re-created `SecretSpec`
-  adopts it and keeps its values).
+  `GeneratedSecret`) or `Retain` (the Secret survives, and a re-created
+  `GeneratedSecret` adopts it and keeps its values).
 - **Mistakes surface where you look.** A bad manifest is rejected at
   `kubectl apply` / `helm install` time by the CRD schema and CEL rules; runtime
   problems appear in `status.conditions` and Events.
@@ -71,10 +71,14 @@ verify them are in [Installation](docs/installation.md).
 
 ## Status
 
-The API is `secretspec.jabbas.eu/v1alpha1`. Defaults and the fingerprint format
-are frozen for this version, so upgrades never rotate your credentials. Breaking
-changes before `v1beta1` are possible but are always called out in the
+The API is `generatedsecrets.jabbas.eu/v1alpha1`. Defaults and the fingerprint
+format are frozen for this version, so upgrades never rotate your credentials.
+Breaking changes before `v1beta1` are possible but are always called out in the
 [changelog](CHANGELOG.md). Supported Kubernetes: 1.34 and newer.
+
+The project was renamed from SecretSpec Operator in 0.2.0, a breaking change;
+see [Moving from 0.1.x](CHANGELOG.md#moving-from-01x) and
+[ADR 0006](docs/adr/0006-rename-to-generated-secrets-operator.md).
 
 ## Documentation
 
@@ -84,7 +88,7 @@ changes before `v1beta1` are possible but are always called out in the
 | [API reference](docs/api-reference.md) | Every field, default and validation; the generated Secret; behaviour table |
 | [Operations](docs/operations.md) | Rotation, reloading consumers, `deletionPolicy`, troubleshooting, metrics, logging |
 | [Security](docs/security.md) | Threat model, RBAC, redaction guarantees, release signing and SBOM |
-| [Examples](examples/README.md) | Seven copy-paste `SecretSpec`s |
+| [Examples](examples/README.md) | Seven copy-paste `GeneratedSecret`s |
 | [Fingerprint format](docs/fingerprints.md) | The frozen format that decides when a value is regenerated |
 | [Development](docs/development.md) | Building, testing and running the operator locally |
 
@@ -94,4 +98,4 @@ Apache-2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Acknowledgement
 
-SecretSpec Operator was inspired by earlier Kubernetes secret-generator projects.
+Generated Secrets Operator was inspired by earlier Kubernetes secret-generator projects.

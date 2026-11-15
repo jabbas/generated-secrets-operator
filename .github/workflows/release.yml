@@ -22,7 +22,7 @@
 # Procedure and verification: docs/development.md ("Releasing") and
 # docs/security.md ("Release signing and SBOM"). Signatures are keyless
 # (GitHub OIDC); the certificate identity is this file at the tag:
-#   https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/<tag>
+#   https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/<tag>
 # so renaming this file changes the identity users verify against.
 name: Release
 
@@ -50,7 +50,7 @@ defaults:
 
 env:
   CARGO_TERM_COLOR: always
-  IMAGE: ghcr.io/jabbas/secretspec-operator
+  IMAGE: ghcr.io/jabbas/generated-secrets-operator
   CHART_REPO: oci://ghcr.io/jabbas/charts
   CERT_OIDC_ISSUER: https://token.actions.githubusercontent.com
   # cosign is installed by sigstore/cosign-installer, which verifies the
@@ -114,9 +114,9 @@ jobs:
           fi
 
           workspace="$(cargo metadata --no-deps --format-version 1 \
-            | jq -r '.packages[] | select(.name == "secretspec-operator") | .version')"
-          chart_version="$(yq '.version' charts/secretspec-operator/Chart.yaml)"
-          chart_app_version="$(yq '.appVersion' charts/secretspec-operator/Chart.yaml)"
+            | jq -r '.packages[] | select(.name == "generated-secrets-operator") | .version')"
+          chart_version="$(yq '.version' charts/generated-secrets-operator/Chart.yaml)"
+          chart_app_version="$(yq '.appVersion' charts/generated-secrets-operator/Chart.yaml)"
           echo "tag=$TAG version=$version base=$base workspace=$workspace chart=$chart_version appVersion=$chart_app_version"
 
           # Final tag: equals the workspace version. rc tag: its base does.
@@ -223,8 +223,8 @@ jobs:
         run: |
           # Static musl ELF for this architecture (`file` prints "statically
           # linked" or "static-pie linked").
-          file "target/dist/$ARCH/secretspec-operator"
-          file "target/dist/$ARCH/secretspec-operator" | grep -q "$ELF"
+          file "target/dist/$ARCH/generated-secrets-operator"
+          file "target/dist/$ARCH/generated-secrets-operator" | grep -q "$ELF"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist-${{ matrix.arch }}
@@ -312,7 +312,7 @@ jobs:
         # Artifacts do not keep file modes; COPY in the Containerfile would
         # otherwise produce a non-executable ENTRYPOINT.
         run: |
-          chmod 0755 target/dist/amd64/secretspec-operator target/dist/arm64/secretspec-operator
+          chmod 0755 target/dist/amd64/generated-secrets-operator target/dist/arm64/generated-secrets-operator
           ls -l target/dist/amd64 target/dist/arm64 target/dist/licenses
           test -s target/dist/licenses/LICENSE
           test -s target/dist/licenses/NOTICE
@@ -363,7 +363,7 @@ jobs:
           # The per-platform images keep the same value as a config label
           # from the Containerfile.
           annotations: |
-            index:org.opencontainers.image.source=https://github.com/jabbas/secretspec-operator
+            index:org.opencontainers.image.source=https://github.com/jabbas/generated-secrets-operator
           # The version label is the base version X.Y.Z, also for a release
           # candidate: the image of `X.Y.Z-rc.N` is promoted unchanged to
           # `X.Y.Z`, so its labels must be right for both. The binary reports
@@ -398,7 +398,7 @@ jobs:
           # malformed index.json already failed at `jq .` above, and a failing
           # jq in the assignment stops the step too.
           source="$(jq -r '.annotations["org.opencontainers.image.source"] // ""' index.json)"
-          if [[ "$source" != "https://github.com/jabbas/secretspec-operator" ]]; then
+          if [[ "$source" != "https://github.com/jabbas/generated-secrets-operator" ]]; then
             # %q: the value comes from the registry; a newline in it must not
             # end the workflow command and start another one.
             printf '::error::the image index has the source annotation %q, not the repository URL\n' "$source"
@@ -429,8 +429,8 @@ jobs:
           DIGEST_ARM64: ${{ steps.platforms.outputs.arm64 }}
         run: |
           mkdir sbom
-          syft "registry:$IMAGE@$DIGEST_AMD64" -o "spdx-json=sbom/secretspec-operator-${TAG}-linux-amd64.spdx.json"
-          syft "registry:$IMAGE@$DIGEST_ARM64" -o "spdx-json=sbom/secretspec-operator-${TAG}-linux-arm64.spdx.json"
+          syft "registry:$IMAGE@$DIGEST_AMD64" -o "spdx-json=sbom/generated-secrets-operator-${TAG}-linux-amd64.spdx.json"
+          syft "registry:$IMAGE@$DIGEST_ARM64" -o "spdx-json=sbom/generated-secrets-operator-${TAG}-linux-arm64.spdx.json"
           ls -l sbom
           # The binary is built with cargo-auditable: each SBOM must list the
           # Rust crates (pkg:cargo/...). The image is `FROM scratch`: there
@@ -460,9 +460,9 @@ jobs:
           DIGEST_ARM64: ${{ steps.platforms.outputs.arm64 }}
         run: |
           cosign attest --yes --type spdxjson \
-            --predicate "sbom/secretspec-operator-${TAG}-linux-amd64.spdx.json" "$IMAGE@$DIGEST_AMD64"
+            --predicate "sbom/generated-secrets-operator-${TAG}-linux-amd64.spdx.json" "$IMAGE@$DIGEST_AMD64"
           cosign attest --yes --type spdxjson \
-            --predicate "sbom/secretspec-operator-${TAG}-linux-arm64.spdx.json" "$IMAGE@$DIGEST_ARM64"
+            --predicate "sbom/generated-secrets-operator-${TAG}-linux-arm64.spdx.json" "$IMAGE@$DIGEST_ARM64"
       # The only step that creates the tag. It refuses to touch a tag that
       # points anywhere else.
       - name: Tag the image
@@ -492,7 +492,7 @@ jobs:
           DIGEST_AMD64: ${{ steps.platforms.outputs.amd64 }}
           DIGEST_ARM64: ${{ steps.platforms.outputs.arm64 }}
         run: |
-          identity="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+          identity="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 
           # By tag, as a user does; it must resolve to the digest we signed.
           cosign verify "$IMAGE:$TAG" \
@@ -608,7 +608,7 @@ jobs:
         env:
           RC_DIGEST: ${{ steps.rc.outputs.digest }}
         run: |
-          identity="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${RC_TAG}"
+          identity="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${RC_TAG}"
           cosign verify "$IMAGE@$RC_DIGEST" \
             --certificate-identity "$identity" \
             --certificate-oidc-issuer "$CERT_OIDC_ISSUER" > rc-verify.json
@@ -682,8 +682,8 @@ jobs:
           DIGEST_ARM64: ${{ steps.platforms.outputs.arm64 }}
         run: |
           mkdir sbom
-          syft "registry:$IMAGE@$DIGEST_AMD64" -o "spdx-json=sbom/secretspec-operator-${TAG}-linux-amd64.spdx.json"
-          syft "registry:$IMAGE@$DIGEST_ARM64" -o "spdx-json=sbom/secretspec-operator-${TAG}-linux-arm64.spdx.json"
+          syft "registry:$IMAGE@$DIGEST_AMD64" -o "spdx-json=sbom/generated-secrets-operator-${TAG}-linux-amd64.spdx.json"
+          syft "registry:$IMAGE@$DIGEST_ARM64" -o "spdx-json=sbom/generated-secrets-operator-${TAG}-linux-arm64.spdx.json"
           ls -l sbom
           # As in the build mode: the binary is built with cargo-auditable, so
           # each SBOM must list the Rust crates.
@@ -698,9 +698,9 @@ jobs:
           DIGEST_ARM64: ${{ steps.platforms.outputs.arm64 }}
         run: |
           cosign attest --yes --type spdxjson \
-            --predicate "sbom/secretspec-operator-${TAG}-linux-amd64.spdx.json" "$IMAGE@$DIGEST_AMD64"
+            --predicate "sbom/generated-secrets-operator-${TAG}-linux-amd64.spdx.json" "$IMAGE@$DIGEST_AMD64"
           cosign attest --yes --type spdxjson \
-            --predicate "sbom/secretspec-operator-${TAG}-linux-arm64.spdx.json" "$IMAGE@$DIGEST_ARM64"
+            --predicate "sbom/generated-secrets-operator-${TAG}-linux-arm64.spdx.json" "$IMAGE@$DIGEST_ARM64"
       # 7. The final identity signs the same digests.
       - name: Sign the image
         env:
@@ -740,8 +740,8 @@ jobs:
           DIGEST_AMD64: ${{ steps.platforms.outputs.amd64 }}
           DIGEST_ARM64: ${{ steps.platforms.outputs.arm64 }}
         run: |
-          identity="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
-          rc_identity="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${RC_TAG}"
+          identity="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+          rc_identity="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${RC_TAG}"
 
           cosign verify "$IMAGE:$TAG" \
             --certificate-identity "$identity" \
@@ -831,7 +831,7 @@ jobs:
         run: |
           source .github/scripts/registry-lookup.sh
           mkdir existing
-          chart_resolve "$CHART_REPO/secretspec-operator" "$VERSION" existing pull.log
+          chart_resolve "$CHART_REPO/generated-secrets-operator" "$VERSION" existing pull.log
           echo "chart lookup: $CHART_STATE"
           if [[ "$CHART_STATE" == found ]]; then
             show_log pull.log
@@ -855,20 +855,20 @@ jobs:
         run: |
           mkdir chart
           if [[ "$PUBLISHED" == "true" ]]; then
-            cp "existing/secretspec-operator-${VERSION}.tgz" chart/
+            cp "existing/generated-secrets-operator-${VERSION}.tgz" chart/
           else
-            helm package charts/secretspec-operator \
+            helm package charts/generated-secrets-operator \
               --version "$VERSION" --app-version "$VERSION" --destination chart
           fi
           ls -l chart
       - name: Check the packaged chart
         run: |
-          package="chart/secretspec-operator-${VERSION}.tgz"
+          package="chart/generated-secrets-operator-${VERSION}.tgz"
           test "$(helm show chart "$package" | yq '.version')" = "$VERSION"
           test "$(helm show chart "$package" | yq '.appVersion')" = "$VERSION"
           # The default image must be exactly the image pushed for this tag
           # (the tag, the chart version and the appVersion are identical).
-          images="$(helm template secretspec-operator "$package" \
+          images="$(helm template generated-secrets-operator "$package" \
             | yq 'select(.kind == "Deployment") | .spec.template.spec.containers[].image')"
           # %q per line: the value is rendered from the package, not trusted.
           while IFS= read -r image; do
@@ -886,7 +886,7 @@ jobs:
         run: |
           source .github/scripts/registry-lookup.sh # show_log
           mkdir rc-pull rc-extract final-extract
-          helm pull "$CHART_REPO/secretspec-operator" --version "$RC_TAG" --destination rc-pull > rc-pull.log 2>&1 || {
+          helm pull "$CHART_REPO/generated-secrets-operator" --version "$RC_TAG" --destination rc-pull > rc-pull.log 2>&1 || {
             show_log rc-pull.log
             printf '::error::could not pull the release candidate chart %q\n' "$RC_TAG"
             exit 1
@@ -894,15 +894,15 @@ jobs:
           show_log rc-pull.log
           rc_digest="$(awk '/^Digest:/ {print $2}' rc-pull.log)"
           [[ "$rc_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-          identity="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${RC_TAG}"
-          cosign verify "${CHART_REPO#oci://}/secretspec-operator@$rc_digest" \
+          identity="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${RC_TAG}"
+          cosign verify "${CHART_REPO#oci://}/generated-secrets-operator@$rc_digest" \
             --certificate-identity "$identity" \
             --certificate-oidc-issuer "$CERT_OIDC_ISSUER" > rc-chart-verify.json
           jq -e --arg d "$rc_digest" \
             'length > 0 and all(.[]; .critical.image."docker-manifest-digest" == $d)' rc-chart-verify.json
-          tar -xzf "rc-pull/secretspec-operator-${RC_TAG}.tgz" -C rc-extract
-          tar -xzf "chart/secretspec-operator-${VERSION}.tgz" -C final-extract
-          bash .github/scripts/chart-compare.sh rc-extract/secretspec-operator final-extract/secretspec-operator
+          tar -xzf "rc-pull/generated-secrets-operator-${RC_TAG}.tgz" -C rc-extract
+          tar -xzf "chart/generated-secrets-operator-${VERSION}.tgz" -C final-extract
+          bash .github/scripts/chart-compare.sh rc-extract/generated-secrets-operator final-extract/generated-secrets-operator
       - name: Push the chart
         id: push
         if: steps.existing.outputs.published != 'true'
@@ -912,7 +912,7 @@ jobs:
           # right before writing. The result of the first lookup may have been
           # a misread access error.
           mkdir recheck
-          chart_resolve "$CHART_REPO/secretspec-operator" "$VERSION" recheck recheck.log
+          chart_resolve "$CHART_REPO/generated-secrets-operator" "$VERSION" recheck recheck.log
           echo "chart recheck: $CHART_STATE"
           if [[ "$CHART_STATE" == found ]]; then
             echo "::error::chart $VERSION exists in the registry; not pushing over it. Re-run the failed jobs to resume with it."
@@ -924,7 +924,7 @@ jobs:
           # and the exit status of helm is kept (fail closed), also with the
           # log printed first.
           status=0
-          helm push "chart/secretspec-operator-${VERSION}.tgz" "$CHART_REPO" > push.log 2>&1 || status=$?
+          helm push "chart/generated-secrets-operator-${VERSION}.tgz" "$CHART_REPO" > push.log 2>&1 || status=$?
           show_log push.log
           if [[ "$status" -ne 0 ]]; then
             echo "::error::helm push failed (exit status $status)"
@@ -945,13 +945,13 @@ jobs:
       - name: Sign the chart
         env:
           CHART_DIGEST: ${{ steps.chart_digest.outputs.digest }}
-        run: cosign sign --yes "${CHART_REPO#oci://}/secretspec-operator@$CHART_DIGEST"
+        run: cosign sign --yes "${CHART_REPO#oci://}/generated-secrets-operator@$CHART_DIGEST"
       - name: Verify the chart
         env:
           CHART_DIGEST: ${{ steps.chart_digest.outputs.digest }}
         run: |
-          identity="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
-          cosign verify "${CHART_REPO#oci://}/secretspec-operator:${VERSION}" \
+          identity="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+          cosign verify "${CHART_REPO#oci://}/generated-secrets-operator:${VERSION}" \
             --certificate-identity "$identity" \
             --certificate-oidc-issuer "$CERT_OIDC_ISSUER" > verify.json
           jq -e --arg d "$CHART_DIGEST" \
@@ -1002,7 +1002,7 @@ jobs:
 
           cat > notes.md <<EOF
           Image: \`$IMAGE:$TAG\` (linux/amd64, linux/arm64)
-          Chart: \`oci://ghcr.io/jabbas/charts/secretspec-operator\` version \`$VERSION\`
+          Chart: \`oci://ghcr.io/jabbas/charts/generated-secrets-operator\` version \`$VERSION\`
 
           The image and the chart are signed with cosign (keyless, GitHub OIDC); the
           SPDX SBOMs are signed attestations on the per-platform images and are
@@ -1142,7 +1142,7 @@ jobs:
             printf '::error::the chart digest %q from the chart job is not a sha256 digest\n' "$CHART_DIGEST"
             exit 1
           fi
-          file="secretspec-operator-${VERSION}.tgz"
+          file="generated-secrets-operator-${VERSION}.tgz"
           package="chart/$file"
           release_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
 
@@ -1157,7 +1157,7 @@ jobs:
           echo "release asset sha256: $sha"
 
           # 2. The OCI chart layer of the signed manifest.
-          manifest="$(crane manifest "${CHART_REPO#oci://}/secretspec-operator@$CHART_DIGEST")"
+          manifest="$(crane manifest "${CHART_REPO#oci://}/generated-secrets-operator@$CHART_DIGEST")"
           layer="$(jq -r '
             if (.layers | length) == 1 and .layers[0].mediaType == "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
             then .layers[0].digest else empty end' <<< "$manifest")"
@@ -1199,7 +1199,7 @@ jobs:
           HELM_CHARTS_TOKEN: ${{ secrets.HELM_CHARTS_TOKEN }}
         run: |
           source .github/scripts/helm-index.sh
-          publish_index helm-charts "chart/secretspec-operator-${VERSION}.tgz" "$VERSION" "$SHA256" \
+          publish_index helm-charts "chart/generated-secrets-operator-${VERSION}.tgz" "$VERSION" "$SHA256" \
             "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
       # Pages builds after the push. A slow build (the version is not listed
       # yet) is reported, not failed: the index is pushed, and a re-run of this

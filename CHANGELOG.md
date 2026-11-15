@@ -4,7 +4,63 @@ All notable changes are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Until the API leaves
 `v1alpha1`, a breaking change is always listed under its release.
 
-## Unreleased
+## 0.2.0 - 2026-11-15
+
+### BREAKING: renamed to Generated Secrets Operator
+
+The project "SecretSpec Operator" is now **Generated Secrets Operator**, and the
+kind `SecretSpec` is now `GeneratedSecret`. The old name collided with
+cachix/secretspec; see [ADR 0006](docs/adr/0006-rename-to-generated-secrets-operator.md).
+Behaviour, fields, defaults and validation are unchanged; only names change.
+
+| Thing | Old (0.1.x) | New |
+|---|---|---|
+| Repository | `jabbas/secretspec-operator` | `jabbas/generated-secrets-operator` |
+| API group | `secretspec.jabbas.eu` | `generatedsecrets.jabbas.eu` (`v1alpha1`) |
+| Kind, plural, short name | `SecretSpec`, `secretspecs`, `ss` | `GeneratedSecret`, `generatedsecrets`, `gensecret` |
+| CRD | `secretspecs.secretspec.jabbas.eu` | `generatedsecrets.generatedsecrets.jabbas.eu` |
+| Image | `ghcr.io/jabbas/secretspec-operator` | `ghcr.io/jabbas/generated-secrets-operator` |
+| OCI chart | `oci://ghcr.io/jabbas/charts/secretspec-operator` | `oci://ghcr.io/jabbas/charts/generated-secrets-operator` |
+| HTTP repository chart | `jabbas/secretspec-operator` | `jabbas/generated-secrets-operator` |
+| Install namespace in the docs | `secretspec-system` | `generated-secrets-system` |
+| Label naming the managing resource | `secretspec.jabbas.eu/spec-name` | `generatedsecrets.jabbas.eu/owner-name` |
+| Annotation with the managing resource UID | `secretspec.jabbas.eu/spec-uid` | `generatedsecrets.jabbas.eu/owner-uid` |
+| Other annotations (`fingerprints`, `generated-at`, `keys`) | `secretspec.jabbas.eu/…` | `generatedsecrets.jabbas.eu/…` |
+| `app.kubernetes.io/managed-by` value and field manager | `secretspec-operator` | `generated-secrets-operator` |
+| Metrics prefix | `secretspec_` (gauge `secretspec_secretspecs`) | `generated_secrets_` (gauge `generated_secrets_resources`) |
+| Fingerprint header line | `secretspec-fingerprint-v1` | `generated-secrets-fingerprint-v1` |
+| cosign identity | `…/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/<tag>` | `…/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/<tag>` |
+
+Releases 0.1.0 to 0.1.5 stay published under the old names and stay installable.
+
+### Moving from 0.1.x
+
+1. There is no automatic migration. The 0.2.0 operator does not recognise
+   anything that 0.1.x created.
+2. Uninstall the old chart (`helm uninstall secretspec-operator --namespace secretspec-system`,
+   or remove its Flux `HelmRelease`).
+3. Delete the old CRD if it was kept:
+   `kubectl delete crd secretspecs.secretspec.jabbas.eu` (the chart sets
+   `helm.sh/resource-policy: keep` when `crds.keep` is true). This also deletes
+   every `SecretSpec` object that still exists, so rewrite and keep their
+   manifests first.
+4. Install the new chart; the documented namespace is now
+   `generated-secrets-system` (see [Installation](docs/installation.md)).
+5. Rewrite your manifests: `apiVersion: generatedsecrets.jabbas.eu/v1alpha1`
+   and `kind: GeneratedSecret`.
+
+**Why 0.1.x Secrets are not adopted.** The operator adopts and updates only
+Secrets that carry its own label and annotations, and a 0.1.x Secret carries the
+old `secretspec.jabbas.eu/…` ones. Adopting them would need code that reads the
+old names, and ADR 0006 rejects that code. The fingerprints on a 0.1.x Secret
+also use the old header line and are never read.
+
+**What `Retain` leaves behind.** A Secret of a `SecretSpec` with
+`deletionPolicy: Retain` survives as a plain Secret that the new operator does
+not manage. A `GeneratedSecret` with the same name reports `Conflict` until you
+delete or rename the old Secret. With `deletionPolicy: Delete` (the default),
+the Secret is garbage-collected together with the `SecretSpec`, so deleting the
+old objects removes it.
 
 ### Changed
 

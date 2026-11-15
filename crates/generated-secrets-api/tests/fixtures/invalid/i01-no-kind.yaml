@@ -1,0 +1,9 @@
+# expect: exactly one of fields, sshKeyPair or basicAuth must be set
+# layer: cel
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: i01-no-kind
+  namespace: test
+spec:
+  deletionPolicy: Delete

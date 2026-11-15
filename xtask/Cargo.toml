@@ -11,7 +11,7 @@ publish = false
 workspace = true
 
 [dependencies]
-secretspec-api = { path = "../crates/secretspec-api" }
+generated-secrets-api = { path = "../crates/generated-secrets-api" }
 kube.workspace = true
 k8s-openapi.workspace = true
 serde.workspace = true

@@ -23,11 +23,11 @@ use serde_norway::Value;
 use crate::{BoxError, CRD_PATH, workspace_root};
 
 /// Chart directory, relative to the workspace root.
-pub const CHART_DIR: &str = "charts/secretspec-operator";
+pub const CHART_DIR: &str = "charts/generated-secrets-operator";
 /// Release name used for every render.
-const RELEASE: &str = "secretspec-operator";
+const RELEASE: &str = "generated-secrets-operator";
 /// Release namespace used for every render.
-const NAMESPACE: &str = "secretspec-system";
+const NAMESPACE: &str = "generated-secrets-system";
 /// A syntactically valid image digest for the digest renders.
 const DIGEST: &str = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 /// Registry override for the mirror renders.
@@ -348,18 +348,18 @@ fn rule(group: &str, resources: &[&str], verbs: &[&str]) -> PolicyRule {
 fn expected_operator_rules() -> Vec<PolicyRule> {
     vec![
         rule(
-            "secretspec.jabbas.eu",
-            &["secretspecs"],
+            "generatedsecrets.jabbas.eu",
+            &["generatedsecrets"],
             &["get", "list", "watch"],
         ),
         rule(
-            "secretspec.jabbas.eu",
-            &["secretspecs/status"],
+            "generatedsecrets.jabbas.eu",
+            &["generatedsecrets/status"],
             &["get", "patch", "update"],
         ),
         rule(
-            "secretspec.jabbas.eu",
-            &["secretspecs/finalizers"],
+            "generatedsecrets.jabbas.eu",
+            &["generatedsecrets/finalizers"],
             &["update"],
         ),
         rule(
@@ -585,7 +585,7 @@ fn single_image(r: &Rendered) -> Result<String, String> {
 }
 
 fn chart_image_reference(ctx: &Ctx) -> Result<(), String> {
-    let repo = "jabbas/secretspec-operator";
+    let repo = "jabbas/generated-secrets-operator";
     // The default image tag is the chart appVersion, unchanged (no `v`).
     ensure_eq(
         "default image",
@@ -1269,7 +1269,7 @@ mod tests {
     fn expected_rules_match_design_section_9() {
         let verbs: Vec<(String, Vec<String>)> = expected_operator_rules()
             .into_iter()
-            .chain(expected_lease_rules("secretspec-operator"))
+            .chain(expected_lease_rules("generated-secrets-operator"))
             .map(|r| (r.resources.unwrap_or_default().join(","), r.verbs))
             .collect();
         assert!(

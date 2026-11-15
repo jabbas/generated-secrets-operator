@@ -1,0 +1,9 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v05-ssh-ecdsa-p384
+  namespace: test
+spec:
+  sshKeyPair:
+    algorithm: ecdsa
+    ecdsaCurve: P-384

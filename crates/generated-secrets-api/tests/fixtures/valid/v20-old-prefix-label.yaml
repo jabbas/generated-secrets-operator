@@ -1,0 +1,15 @@
+# The pre-rename prefix `secretspec.jabbas.eu/` is no longer reserved: the
+# operator reserves only `generatedsecrets.jabbas.eu/`, so a label under the
+# old prefix is an ordinary user label. This is the one valid fixture that
+# deliberately keeps the old name.
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v20-old-prefix-label
+  namespace: test
+spec:
+  secret:
+    labels:
+      secretspec.jabbas.eu/legacy: "x"
+  fields:
+    - name: password

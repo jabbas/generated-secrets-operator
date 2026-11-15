@@ -1,0 +1,10 @@
+# expect: metadata.name must be at most 63 characters because it is used as a label value
+# layer: cel
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: i44-name-64-characters-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  namespace: test
+spec:
+  fields:
+    - name: password

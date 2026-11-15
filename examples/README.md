@@ -1,14 +1,14 @@
 # Examples
 
-Seven copy-paste `SecretSpec`s. Each file starts with a comment that explains
+Seven copy-paste `GeneratedSecret`s. Each file starts with a comment that explains
 when to use it. Apply one into the namespace of your application:
 
 ```sh
 kubectl apply -n <namespace> -f examples/app-admin-password.yaml
-kubectl get secretspecs -n <namespace>
+kubectl get generatedsecrets -n <namespace>
 ```
 
-The generated Secret has the same name as the `SecretSpec`. Every example has
+The generated Secret has the same name as the `GeneratedSecret`. Every example has
 been applied by the chart's end-to-end test in a namespace that enforces the Pod
 Security Standard `restricted`.
 

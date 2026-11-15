@@ -1,8 +1,0 @@
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
-metadata:
-  name: v17-ssh-comment-empty
-  namespace: test
-spec:
-  sshKeyPair:
-    comment: ""

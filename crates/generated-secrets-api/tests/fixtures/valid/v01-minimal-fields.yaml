@@ -1,0 +1,8 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v01-minimal-fields
+  namespace: test
+spec:
+  fields:
+    - name: password

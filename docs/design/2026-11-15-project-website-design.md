@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | Draft — architect's proposal written while the owner was away; awaiting owner review |
+| **Status** | Approved by owner (2026-11-15), with changes: address `generatedsecrets.jabbas.eu`; visual design from Stitch (§5); no separate manifest section (§4) |
 | **Date** | 2026-11-15 |
 | **Depends on** | Rename design (`docs/design/2026-11-15-rename-to-generated-secrets-operator-design.md`) merged; 0.2.0 final released; contributor-readiness pull requests A (demo recording `docs/assets/demo.cast`) and B (README rewrite) merged (§7) |
 
-> **Decisions for the owner to review (also: §7 sequencing — the site is built after the README rewrite and is first public on its custom domain)**
+> **Decisions reviewed and approved by the owner on 2026-11-15** (also: §7 sequencing — the site is built after the README rewrite and is first public on its custom domain)
 >
 > 1. Plain hand-written HTML/CSS, no site generator (§3).
 > 2. The site source lives in this repository under `site/` and deploys with GitHub Actions (§3).
@@ -27,7 +27,7 @@ Section 9 lists what is deliberately left to the builder.
 ## 1. Intent
 
 - This is step 4 of the promotion campaign **[owner]**: rename → repository ready for strangers → Artifact Hub listing → website → Show HN.
-- Address: `generated-secrets.jabbas.eu` **[owner]** — the owner owns `jabbas.eu`; the address is the architect's proposal, accepted in conversation. It reads like the API group `generatedsecrets.jabbas.eu` that appears in every manifest.
+- Address: `generatedsecrets.jabbas.eu` **[owner]** — the owner owns `jabbas.eu`. The address is identical to the API group `generatedsecrets.jabbas.eu` that appears in every manifest, so `apiVersion: generatedsecrets.jabbas.eu/v1alpha1` is also the project's address.
 - Role **[architect]**: the Hacker News post links the GitHub repository (research shows repository links do better), so the website is not the main landing page. It is the shareable, visual front door for everything else (Reddit, Slack, social posts, the repository's homepage field, Artifact Hub links), the only place with the interactive demo player, and the source of the social preview image. It MUST convince in one screen and send people to try the operator and to GitHub.
 - Audience: as in the contributor-readiness design — Kubernetes users who need credentials nobody has to know in advance.
 - Success **[owner]**: stars, issues and pull requests from strangers. The site's job: the visitor understands in 10 seconds, believes in 1 minute (demo), tries it in 5 minutes (commands), or stars the repository.
@@ -86,7 +86,9 @@ Section 9 lists what is deliberately left to the builder.
    - no autoplay.
 
    Fallback without JavaScript: a link to the GIF in the repository.
-3. **The smallest manifest** (`kind: GeneratedSecret`), syntax-highlighted with CSS only (pre-rendered spans, no highlighter library).
+
+   Directly under the player, one sentence: "The operator creates the Secret `app-admin` with a generated 32-character password — once.", and a muted line "asciinema recording". **[owner]** There is no separate manifest section: the player's poster frame already shows the manifest, and the "Try it" block (item 5) carries it as text.
+3. *(removed by the owner: a separate "Declare it next to your app" manifest section duplicated the player's poster frame)*
 4. **Why.** The same three pains and the one promise as the README.
 5. **Try it in 5 minutes.** The same commands as the README, except without the `--version` pin, so the page never goes stale between releases (`helm install` picks the latest final release). Copy buttons are optional and are the only other allowed JavaScript (a few lines, inline).
 6. **When to use it, and when not.** A short version of the README comparison, with a link to the full one.
@@ -99,9 +101,13 @@ Section 9 lists what is deliberately left to the builder.
    - Written in Rust.
 8. **Footer.** Links to the documentation (GitHub `docs/`), the Artifact Hub package, the changelog, the security policy, and the author (Grzegorz Dzięgielewski, linking to the GitHub profile `jabbas`).
 
-Content duplication with the README is accepted for items 1, 3, 4 and 5 and kept small. Rule: when the README's wording of these items changes, the same pull request MUST update `site/index.html`. There is no automated check — the requirement does not justify a lasting component.
+Code blocks are syntax-highlighted with CSS only (pre-rendered spans, no highlighter library).
+
+Content duplication with the README is accepted for items 1, 4 and 5 and kept small. Rule: when the README's wording of these items changes, the same pull request MUST update `site/index.html`. There is no automated check — the requirement does not justify a lasting component.
 
 ## 5. Visual direction **[architect; built by the frontend agent]**
+
+**[owner]** The visual design was made in Google Stitch and is the reference for the build: project "Generated Secrets Operator — website", https://stitch.withgoogle.com/projects/16971326538841034893 — screens desktop dark `1e321b30646c4a35aeb7c59ba7fb3049`, desktop light `038259448ce941e1a8957394a5b6ba31`, mobile dark `e3db2225619249f7ac0094be670401f2`, social preview `f65bebf2b0db42adb0b11279f122a27a` (ignore the discarded mobile screen `236dd5c060954ba4aa41dce988380eb2`). Palette: dark background `#101413`, surface `#161C1A`, code `#0B0F0E`, border `#26302D`, text `#E6EBE9`, muted `#9AA5A1`, accent `#4EC9A0`; light background `#FBFCFB`, surface `#F2F5F4`, border `#DDE3E1`, text `#15201C`, muted `#56625E`, accent `#0F7A5A` (the demo terminal stays dark in the light theme). 6 px radius, 1 px borders, no shadows; wordmark `$_ Generated Secrets Operator` with `$_` in the accent colour. Stitch's HTML uses the Tailwind CDN, Google Fonts and Material Symbols: the build MUST replace them with one hand-written CSS file, the system font stacks below and inline SVG or text characters (▶ ⧉ →). Stitch's placeholder links and the "1:20" duration caption are not part of the design.
 
 - **Terminal-native and quiet:** dark and light themes via `prefers-color-scheme`, a monospace accent for code and the wordmark, one accent colour, generous whitespace. It should look like a well-made tool page (for example the tone of kind.sigs.k8s.io or ripgrep's README), not a startup landing page.
 - **Responsive** down to phone width; the player scales with `fit: "width"`.
@@ -115,9 +121,9 @@ Content duplication with the README is accepted for items 1, 3, 4 and 5 and kept
 Source: GitHub Docs, "Verifying your custom domain" and "Managing a custom domain".
 
 1. **Owner:** verify `jabbas.eu` at account level — GitHub profile Settings → Pages → Add a domain → create the TXT record `_github-pages-challenge-jabbas.jabbas.eu` at the DNS provider and keep it permanently. Reason: after verification only the owner's repositories can publish on `jabbas.eu` and its immediate subdomains (protection against domain takeover).
-2. **Agent:** enable Pages with source "GitHub Actions" and set the custom domain `generated-secrets.jabbas.eu` (`gh api`).
-3. **Owner:** create the DNS record `generated-secrets.jabbas.eu CNAME jabbas.github.io` (no wildcard records). If the zone has CAA (Certification Authority Authorization) records, they MUST allow `letsencrypt.org`.
-4. **Agent:** once the certificate is issued (minutes, up to 24 hours), enforce HTTPS and set the repository homepage URL to `https://generated-secrets.jabbas.eu`.
+2. **Agent:** enable Pages with source "GitHub Actions" and set the custom domain `generatedsecrets.jabbas.eu` (`gh api`).
+3. **Owner:** create the DNS record `generatedsecrets.jabbas.eu CNAME jabbas.github.io` (no wildcard records). If the zone has CAA (Certification Authority Authorization) records, they MUST allow `letsencrypt.org`.
+4. **Agent:** once the certificate is issued (minutes, up to 24 hours), enforce HTTPS and set the repository homepage URL to `https://generatedsecrets.jabbas.eu`.
 
 ## 7. Sequencing
 
@@ -126,13 +132,13 @@ Source: GitHub Docs, "Verifying your custom domain" and "Managing a custom domai
 1. Build after contributor-readiness pull request B (the README rewrite, which itself comes after 0.2.0 final) is merged. Pull request A's recording exists by then.
 2. Review on the pull request branch, locally only (open `site/index.html` through a local static file server with `docs/assets/demo.cast` copied next to it). Pages is not enabled yet, so nothing is public.
 3. Before merging, run the "try it" commands verbatim on a fresh kind cluster; 0.2.0 final exists by then, so the unpinned `helm install` resolves.
-4. Merge, then do §6 in order: domain verification, enable Pages with the custom domain, DNS record, HTTPS. The site is first public at `https://generated-secrets.jabbas.eu`; there is no review step on the default `github.io` URL (once the custom domain is set, that URL redirects to it).
+4. Merge, then do §6 in order: domain verification, enable Pages with the custom domain, DNS record, HTTPS. The site is first public at `https://generatedsecrets.jabbas.eu`; there is no review step on the default `github.io` URL (once the custom domain is set, that URL redirects to it).
 5. Footer link to the Artifact Hub package: included only if the listing (campaign step 3) already exists; otherwise omitted and added in a later small pull request.
 6. Then set the repository homepage URL and link the site from the README.
 
 ## 8. Done criteria
 
-- `https://generated-secrets.jabbas.eu` serves the page over HTTPS.
+- `https://generatedsecrets.jabbas.eu` serves the page over HTTPS.
 - The player plays `docs/assets/demo.cast`.
 - The "try it" commands work verbatim on a fresh kind cluster.
 - No third-party requests (checked in the browser developer tools).

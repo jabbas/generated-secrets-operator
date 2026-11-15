@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| **Status** | Draft — architect's proposal written while the owner was away; awaiting owner review |
+| **Status** | Approved by owner (2026-11-15) |
 | **Date** | 2026-11-15 |
 | **Depends on** | Rename design (`docs/design/2026-11-15-rename-to-generated-secrets-operator-design.md`) merged; registration on Artifact Hub after the first final release carrying the annotations (§5) |
 
-> **Decisions for the owner to review**
+> **Decisions reviewed and approved by the owner on 2026-11-15**
 >
 > 1. List only the OCI repository, not the HTTP repository (§2).
 > 2. Hide release candidates through the `ignore` rule (§4).
@@ -93,6 +93,8 @@ Not used, with reasons:
 ## 5. Steps and who does them
 
 1. **Agent:** add the `Chart.yaml` annotations (§3) and `.github/artifacthub-repo.yml` without `repositoryID`, in a pull request. **[architect]** Timing: preferably merged to `main` after the rename is merged and BEFORE `0.2.0-rc.1` is tagged, so 0.2.0 carries them (annotations only take effect on a new chart version). If `0.2.0-rc.1` is already cut, do not restart the 0.2.0 cycle for metadata: the annotations ship with the next regular release (for example 0.2.1, with its normal release-candidate and home-lab cycle). Either way, the owner registers the repository on Artifact Hub (step 2) only after the first final version WITH the annotations is published, so the first listed version already shows the CRD card and images.
+
+   **What happened [owner, 2026-11-15]:** `0.2.0-rc.1` was tagged before the annotations were merged, but its home-lab test had not started. Restarting therefore cost only one build, not a full cycle: the annotations (pull request #24) are merged, `0.2.0-rc.2` is tagged on the new `main`, tested in the home lab and promoted to 0.2.0; `0.2.0-rc.1` stays as a superseded candidate (precedent `0.1.4-rc.1`). The rule above still applies whenever a candidate's test has already begun.
 2. **Owner** (needs the owner's Artifact Hub login, via GitHub): sign in at artifacthub.io → Control Panel → Repositories → Add:
    - kind: Helm charts;
    - name: `generated-secrets-operator` (cannot be renamed later);

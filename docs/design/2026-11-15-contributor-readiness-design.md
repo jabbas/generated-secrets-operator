@@ -24,7 +24,7 @@ Section 10 lists what is deliberately left to the builder.
   1. rename;
   2. this project — a repository ready for strangers;
   3. Artifact Hub listing;
-  4. project website `generated-secrets.jabbas.eu`;
+  4. project website `generatedsecrets.jabbas.eu` (same as the API group);
   5. Show HN (Hacker News) post.
 
   This document covers step 2 only.
@@ -67,7 +67,7 @@ Section 10 lists what is deliberately left to the builder.
   - **Pull request B**, after `0.2.0` final is promoted: the README rewrite (§3). The README pins only released versions (`docs/development.md`), so the "Try it in 5 minutes" block uses `0.2.0`, never a release candidate.
 - **GitHub-side work (§8) is done by the agent with the `gh` command-line tool**, not by the owner, including enabling private vulnerability reporting. If the rename plan's owner step already set the description and topics, the agent only verifies them against §8.
 - Roadmap and seed issues are filed in pull request A's phase, so their numbers exist when pull request B writes the README.
-- The README demo GIF links to nothing for now. GitHub shows `.cast` files as raw text, and an asciinema.org upload would be a third-party publication. The website project adds the interactive player and the README link then.
+- **[owner]** The README demo GIF links to the recording on asciinema.org (the owner published the previous recording at https://asciinema.org/a/Mp19PiTeiHCqkGSC). That recording still shows the old names, so the new recording (§7) is uploaded to asciinema.org as well and the README links the new URL; the old upload is then deleted by the owner. The website keeps its own vendored player (no third-party requests).
 - Code changes to the operator.
 
 ### 2.3 Anti-goals (a failure even if it "works")

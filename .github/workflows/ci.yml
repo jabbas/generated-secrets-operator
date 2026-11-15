@@ -53,7 +53,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           cache-save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo test -p secretspec-core --release -- --ignored
+      - run: cargo test -p generated-secrets-core --release -- --ignored
 
   crdgen:
     runs-on: ubuntu-24.04
@@ -169,17 +169,17 @@ jobs:
       - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           version: v0.33.0
-          cluster_name: secretspec-api-${{ matrix.kubernetes }}
+          cluster_name: generated-secrets-api-${{ matrix.kubernetes }}
           node_image: ${{ matrix.node_image }}
           wait: 120s
       - name: Export kubeconfig
         env:
-          CLUSTER: secretspec-api-${{ matrix.kubernetes }}
+          CLUSTER: generated-secrets-api-${{ matrix.kubernetes }}
         run: kind get kubeconfig --name "$CLUSTER" > "$RUNNER_TEMP/kubeconfig"
       - name: Server-side validation
         env:
-          SECRETSPEC_TEST_KUBECONFIG: ${{ runner.temp }}/kubeconfig
-        run: cargo test -p secretspec-api --test server_validation -- --ignored --test-threads=1
+          GENERATED_SECRETS_TEST_KUBECONFIG: ${{ runner.temp }}/kubeconfig
+        run: cargo test -p generated-secrets-api --test server_validation -- --ignored --test-threads=1
 
   # Runs the operator in-process against a real API server, as a
   # ServiceAccount with exactly the operator's RBAC (impersonated). Same kind
@@ -203,17 +203,17 @@ jobs:
       - uses: helm/kind-action@ea822c7bf1874f08e5a491df991c228edffc3376 # v1.15.2
         with:
           version: v0.33.0
-          cluster_name: secretspec-operator-${{ matrix.kubernetes }}
+          cluster_name: generated-secrets-operator-${{ matrix.kubernetes }}
           node_image: ${{ matrix.node_image }}
           wait: 120s
       - name: Export kubeconfig
         env:
-          CLUSTER: secretspec-operator-${{ matrix.kubernetes }}
+          CLUSTER: generated-secrets-operator-${{ matrix.kubernetes }}
         run: kind get kubeconfig --name "$CLUSTER" > "$RUNNER_TEMP/kubeconfig"
       - name: Operator integration tests
         env:
-          SECRETSPEC_TEST_KUBECONFIG: ${{ runner.temp }}/kubeconfig
-        run: cargo test -p secretspec-operator --test integration -- --ignored --test-threads=1
+          GENERATED_SECRETS_TEST_KUBECONFIG: ${{ runner.temp }}/kubeconfig
+        run: cargo test -p generated-secrets-operator --test integration -- --ignored --test-threads=1
 
   # Installs the Helm chart from the working tree with the image built from
   # build/Containerfile (static musl binary, loaded into kind) and runs the
@@ -232,8 +232,8 @@ jobs:
     name: e2e (Kubernetes ${{ matrix.kubernetes }})
     timeout-minutes: 45
     env:
-      SECRETSPEC_E2E_IMAGE: localhost/secretspec-operator:e2e
-      CLUSTER: secretspec-e2e-${{ matrix.kubernetes }}
+      GENERATED_SECRETS_E2E_IMAGE: localhost/generated-secrets-operator:e2e
+      CLUSTER: generated-secrets-e2e-${{ matrix.kubernetes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
@@ -266,7 +266,7 @@ jobs:
         run: |
           docker buildx build --load --platform linux/amd64 \
             --build-arg VERSION=0.0.0-e2e --build-arg REVISION="$GITHUB_SHA" \
-            -f build/Containerfile -t "$SECRETSPEC_E2E_IMAGE" .
+            -f build/Containerfile -t "$GENERATED_SECRETS_E2E_IMAGE" .
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         with:
           version: v4.3.2
@@ -277,25 +277,25 @@ jobs:
           node_image: ${{ matrix.node_image }}
           wait: 120s
       - name: Load the image into kind
-        run: kind load docker-image "$SECRETSPEC_E2E_IMAGE" --name "$CLUSTER"
+        run: kind load docker-image "$GENERATED_SECRETS_E2E_IMAGE" --name "$CLUSTER"
       - name: Export kubeconfig
         run: kind get kubeconfig --name "$CLUSTER" > "$RUNNER_TEMP/kubeconfig"
       - name: End-to-end tests
         env:
-          SECRETSPEC_E2E_KUBECONFIG: ${{ runner.temp }}/kubeconfig
-        run: cargo test -p secretspec-operator --test e2e -- --ignored --test-threads=1
+          GENERATED_SECRETS_E2E_KUBECONFIG: ${{ runner.temp }}/kubeconfig
+        run: cargo test -p generated-secrets-operator --test e2e -- --ignored --test-threads=1
       # Diagnostics for a failed run. No Secret is read: only pods, operator
-      # logs (which never contain values), SecretSpecs and events.
+      # logs (which never contain values), GeneratedSecrets and events.
       - name: Dump diagnostics
         if: failure()
         env:
           KUBECONFIG: ${{ runner.temp }}/kubeconfig
         run: |
           kubectl get pods --all-namespaces -o wide || true
-          kubectl --namespace secretspec-system describe pods || true
-          kubectl --namespace secretspec-system logs --selector app.kubernetes.io/name=secretspec-operator --all-containers --tail=500 --prefix || true
-          kubectl --namespace secretspec-system logs --selector app.kubernetes.io/name=secretspec-operator --all-containers --previous --tail=200 --prefix || true
-          kubectl get secretspecs --all-namespaces -o wide || true
+          kubectl --namespace generated-secrets-system describe pods || true
+          kubectl --namespace generated-secrets-system logs --selector app.kubernetes.io/name=generated-secrets-operator --all-containers --tail=500 --prefix || true
+          kubectl --namespace generated-secrets-system logs --selector app.kubernetes.io/name=generated-secrets-operator --all-containers --previous --tail=200 --prefix || true
+          kubectl get generatedsecrets --all-namespaces -o wide || true
           kubectl get events --all-namespaces --sort-by=.lastTimestamp || true
 
   deny:

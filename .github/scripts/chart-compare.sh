@@ -8,7 +8,7 @@
 #   bash .github/scripts/chart-compare.sh <rc-chart-dir> <final-chart-dir>
 #
 # Both arguments are extracted charts (the directory that holds Chart.yaml,
-# e.g. rc/secretspec-operator). Passes only if
+# e.g. rc/generated-secrets-operator). Passes only if
 #
 #   - both have the same manifest: the same paths, and for each path the same
 #     type (file, directory, symlink), the same mode (not for symlinks) and

@@ -20,7 +20,7 @@
 #
 # Needs: helm (or $HELM), yq (mikefarah v4), jq (tests only), git, curl.
 
-CHART_NAME=secretspec-operator
+CHART_NAME=generated-secrets-operator
 
 # The helm binary; the tests run against more than one.
 helm_cmd() { "${HELM:-helm}" "$@"; }

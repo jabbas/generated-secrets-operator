@@ -12,7 +12,7 @@ manages) and regenerates every generated value within seconds; literals from
 
 ```sh
 kubectl delete secret app-admin
-kubectl get secret app-admin -o jsonpath='{.metadata.annotations.secretspec\.jabbas\.eu/generated-at}'; echo
+kubectl get secret app-admin -o jsonpath='{.metadata.annotations.generatedsecrets\.jabbas\.eu/generated-at}'; echo
 ```
 
 For a `fields` Secret you can rotate **one key** by removing just that key; only
@@ -57,12 +57,12 @@ generated value** of the Secret at once, including both halves of an SSH key
 pair. Literals are untouched.
 
 - **The clock starts when the operator first observes the schedule.** When a
-  `SecretSpec` with `rotation` is created, `generated-at` is that moment and the
+  `GeneratedSecret` with `rotation` is created, `generated-at` is that moment and the
   first rotation is one interval later. When you add `rotation` to an existing
-  `SecretSpec`, there is no immediate rotation: if the Secret's `generated-at` is
+  `GeneratedSecret`, there is no immediate rotation: if the Secret's `generated-at` is
   not yet one interval old, the schedule counts from it; otherwise (or if it is
   missing) it counts from now. The same holds when the status is lost or a new
-  `SecretSpec` adopts a retained Secret — the first rotation can then be up to
+  `GeneratedSecret` adopts a retained Secret — the first rotation can then be up to
   one interval away, never sooner than expected.
 - **Missed intervals coalesce.** If the operator was down for several
   intervals, it rotates once on return, and the next rotation is one interval
@@ -76,13 +76,13 @@ pair. Literals are untouched.
   `Rotated` Event lists the keys, never values.
 
 ```sh
-kubectl get secretspec shared-token
+kubectl get generatedsecret shared-token
 ```
 
 ## `deletionPolicy` and reinstalls
 
 > **Warning.** With `deletionPolicy: Delete` (the default), anything that deletes
-> the `SecretSpec` also deletes the Secret, and the next creation produces **new
+> the `GeneratedSecret` also deletes the Secret, and the next creation produces **new
 > values**. That includes `helm uninstall` followed by `helm install`, a
 > HelmRelease remediation (Flux) or a prune (Argo CD, Flux, any GitOps tool),
 > and deleting the CRD.
@@ -93,8 +93,13 @@ kubectl get secretspec shared-token
 > Otherwise the application keeps the old value while the Secret holds a new
 > one.
 
-Under `Retain` the Secret keeps its labels and annotations but has no owner, so
-deleting the `SecretSpec` leaves it untouched. Re-creating a `SecretSpec` with
+"Owner" in the label `generatedsecrets.jabbas.eu/owner-name` and the annotation
+`generatedsecrets.jabbas.eu/owner-uid` means the `GeneratedSecret` that manages
+the Secret, whether or not an `ownerReference` exists (with
+`deletionPolicy: Retain` there is none).
+
+Under `Retain` the Secret keeps its labels and annotations but has no `ownerReference`, so
+deleting the `GeneratedSecret` leaves it untouched. Re-creating a `GeneratedSecret` with
 the same name **adopts** it: values whose definition is unchanged are kept, the
 rest are regenerated, and an `Adopted` Event is emitted. This is how a
 credential survives a reinstall. See [Security](security.md#adoption) for the
@@ -118,18 +123,18 @@ it yourself (`kubectl delete secret <name>`) when you no longer need it.
 Start with the object:
 
 ```sh
-kubectl get secretspecs -A                      # READY / KIND / NEXT ROTATION
-kubectl describe secretspec <name> -n <namespace>   # conditions and Events
-kubectl get secretspec <name> -n <namespace> \
+kubectl get generatedsecrets -A                          # READY / KIND / NEXT ROTATION
+kubectl describe generatedsecret <name> -n <namespace>   # conditions and Events
+kubectl get generatedsecret <name> -n <namespace> \
   -o jsonpath='{.status.conditions[?(@.type=="Ready")].reason}: {.status.conditions[?(@.type=="Ready")].message}{"\n"}'
 ```
 
-Everything the operator knows that is specific to one `SecretSpec` appears in
+Everything the operator knows that is specific to one `GeneratedSecret` appears in
 its `Ready` condition and in Events — not only in the operator's logs. If a
-`SecretSpec` has **no status at all**, the operator has not reconciled it:
-check that the operator pods are running (`kubectl -n secretspec-system get
+`GeneratedSecret` has **no status at all**, the operator has not reconciled it:
+check that the operator pods are running (`kubectl -n generated-secrets-system get
 pods`), that the CRD matches the chart, and — in namespace mode — that the
-`SecretSpec`'s namespace is in `watchNamespaces`; objects in other namespaces are
+`GeneratedSecret`'s namespace is in `watchNamespaces`; objects in other namespaces are
 [ignored](installation.md#scope-cluster-mode-and-namespace-mode).
 
 ### Ready condition
@@ -137,32 +142,32 @@ pods`), that the CRD matches the chart, and — in namespace mode — that the
 | Reason | Status | Meaning and fix |
 |---|---|---|
 | `Generated` | `True` | The Secret matches the spec. |
-| `Conflict` | `False` | A Secret with the target name exists that this `SecretSpec` may not manage, or has the wrong type. The message says which: `Secret <name> exists and is not managed by this SecretSpec` (no `managed-by`/`spec-name` labels of the operator); `… is controlled by <Kind> <name> (<apiVersion>) and not by a SecretSpec`; or `Secret <name> has type <old>; delete it to recreate it with type <new>`. **Nothing is written.** The operator never adopts an unlabelled Secret. Rename the `SecretSpec`, or delete the foreign Secret if it is yours to delete; for a type mismatch delete the Secret (all values are regenerated). |
-| `InvalidSpec` | `False` | Runtime validation failed; the message lists each problem with its field path, e.g. `spec.fields[0].exclude: alphabet must contain at least 2 characters after exclude`. Fix the `SecretSpec`. |
-| `ApplyFailed` | `False` | Writing the Secret failed. The message is `apply of Secret failed: <HTTP code> <reason>` (for example `403 Forbidden`); the server's message is deliberately not copied, because it can echo submitted data. Retried every **30 seconds**. Check RBAC, admission policies and quotas for Secrets in that namespace. One `403` is **not** reported this way: while a namespace is being deleted, Kubernetes refuses to create the Secret (cause `NamespaceTerminating`). The operator then logs once at `debug`, writes no status, publishes no event and does not retry (the `SecretSpec` is deleted with its namespace); the reconcile counts as a success in the metrics. |
+| `Conflict` | `False` | A Secret with the target name exists that this `GeneratedSecret` may not manage, or has the wrong type. The message says which: `Secret <name> exists and is not managed by this GeneratedSecret` (no `managed-by`/`owner-name` labels of the operator); `… is controlled by <Kind> <name> (<apiVersion>) and not by a GeneratedSecret`; or `Secret <name> has type <old>; delete it to recreate it with type <new>`. **Nothing is written.** The operator never adopts an unlabelled Secret. Rename the `GeneratedSecret`, or delete the foreign Secret if it is yours to delete; for a type mismatch delete the Secret (all values are regenerated). |
+| `InvalidSpec` | `False` | Runtime validation failed; the message lists each problem with its field path, e.g. `spec.fields[0].exclude: alphabet must contain at least 2 characters after exclude`. Fix the `GeneratedSecret`. |
+| `ApplyFailed` | `False` | Writing the Secret failed. The message is `apply of Secret failed: <HTTP code> <reason>` (for example `403 Forbidden`); the server's message is deliberately not copied, because it can echo submitted data. Retried every **30 seconds**. Check RBAC, admission policies and quotas for Secrets in that namespace. One `403` is **not** reported this way: while a namespace is being deleted, Kubernetes refuses to create the Secret (cause `NamespaceTerminating`). The operator then logs once at `debug`, writes no status, publishes no event and does not retry (the `GeneratedSecret` is deleted with its namespace); the reconcile counts as a success in the metrics. |
 | `GenerationFailed` | `False` | Generating a value failed inside the operator (SSH key library, bcrypt) — not a problem of your spec. Message: `value generation failed: <cause>`. Retried after **30 seconds**. If it persists, report a bug. |
-| `WaitingForGarbageCollection` | `False` | The Secret still has an owner reference to a *deleted* `SecretSpec` of the same name (you deleted and re-created it quickly under `Delete`). The operator waits and re-checks every 5 seconds instead of adopting the Secret. It resolves when Kubernetes garbage collection finishes; if it lasts minutes, the garbage collector is stuck (check the controller manager). No Event is emitted for this reason. |
+| `WaitingForGarbageCollection` | `False` | The Secret still has an owner reference to a *deleted* `GeneratedSecret` of the same name (you deleted and re-created it quickly under `Delete`). The operator waits and re-checks every 5 seconds instead of adopting the Secret. It resolves when Kubernetes garbage collection finishes; if it lasts minutes, the garbage collector is stuck (check the controller manager). No Event is emitted for this reason. |
 
 A `Conflict` is re-checked about **every minute** (or at the periodic resync,
 if that is shorter): the operator's Secret watch only sees Secrets that carry
 its labels, so it cannot notice by itself that a *foreign* blocker is gone.
-Delete the foreign Secret (or rename the `SecretSpec`) and the status turns
+Delete the foreign Secret (or rename the `GeneratedSecret`) and the status turns
 `Generated` within about a minute, without a restart. Each re-check plans the
 same `Conflict` event again; Kubernetes aggregates identical events into a
 series, so `kubectl describe` shows one event with a growing count.
 
-An `InvalidSpec` is re-evaluated when the `SecretSpec` changes, when a Secret
+An `InvalidSpec` is re-evaluated when the `GeneratedSecret` changes, when a Secret
 the operator manages changes, and at the periodic resync (default one hour,
 `resyncInterval`). To make the operator look immediately, restart it; this is
 safe, values never change on restart:
 
 ```sh
-kubectl --namespace secretspec-system rollout restart deployment/secretspec-operator
+kubectl --namespace generated-secrets-system rollout restart deployment/generated-secrets-operator
 ```
 
 ### Events
 
-Events are published for the `SecretSpec` (`kubectl describe`). Messages name
+Events are published for the `GeneratedSecret` (`kubectl describe`). Messages name
 keys and never contain values.
 
 | Type | Reason | When | Message |
@@ -177,7 +182,7 @@ keys and never contain values.
 | Warning | `GenerationFailed` | See the table above. | as the condition |
 | Warning | `LowEntropy` | A (re)generated value has less than 128 bits of entropy. The spec is **not** rejected. | `keys with less than 128 bits of entropy: <names>` |
 | Warning | `FingerprintsReset` | The fingerprint annotation was missing, not valid JSON or had an invalid entry (for example after someone edited or stripped annotations). Present values were **kept** and the fingerprints re-stamped; nothing was rotated. | `kept existing values for keys: <names> (fingerprint metadata was missing or invalid)` |
-| Warning | `AnchorReset` | The `generated-at` annotation was not a valid RFC 3339 time. The rotation anchor was reset to now; no rotation happened. | `annotation secretspec.jabbas.eu/generated-at was not a valid RFC 3339 time; the rotation anchor was reset to <time>` |
+| Warning | `AnchorReset` | The `generated-at` annotation was not a valid RFC 3339 time. The rotation anchor was reset to now; no rotation happened. | `annotation generatedsecrets.jabbas.eu/generated-at was not a valid RFC 3339 time; the rotation anchor was reset to <time>` |
 | Warning | `PasswordTruncated` | A (re)generated `basicAuth` password is longer than 72 bytes. | `password for key <key> is longer than 72 bytes; the htpasswd hash covers only the first 72 bytes` |
 
 On `ApplyFailed`, `FingerprintsReset` and `AnchorReset` are not emitted for that
@@ -212,7 +217,7 @@ first source. For an interactive look, attach an
 that brings its own tools and shares the operator's process namespace:
 
 ```sh
-kubectl -n secretspec-system debug -it <operator-pod> --image=busybox:stable \
+kubectl -n generated-secrets-system debug -it <operator-pod> --image=busybox:stable \
   --target=operator --profile=restricted
 ```
 
@@ -221,7 +226,7 @@ shell: `-i` (no `-t`) plus the command after `--`. The debug container starts,
 runs it and prints its output:
 
 ```sh
-kubectl -n secretspec-system debug -i <operator-pod> \
+kubectl -n generated-secrets-system debug -i <operator-pod> \
   --image=busybox:stable@sha256:<digest> \
   --target=operator --profile=restricted -- ls /proc/1/root/licenses/
 ```
@@ -248,20 +253,20 @@ have no shell either.) To debug a node-level or startup problem, `kubectl debug 
 --image=…` or a copy of the pod (`kubectl debug <pod> --copy-to=… --image=…`)
 work as usual.
 
-## Using SecretSpec in a Helm chart
+## Using GeneratedSecret in a Helm chart
 
 Application charts usually share a "common labels" helper. The standard one
 emits `app.kubernetes.io/managed-by: Helm`, and **`secret.labels` rejects that
-key** (and keys under `secretspec.jabbas.eu/`), because the operator owns the
-label on the Secrets it manages. The `SecretSpec`'s own `metadata.labels` may
+key** (and keys under `generatedsecrets.jabbas.eu/`), because the operator owns the
+label on the Secrets it manages. The `GeneratedSecret`'s own `metadata.labels` may
 carry it — only `spec.secret.labels` and `spec.secret.annotations` are checked.
 
 Remove the key before passing the labels on to the Secret:
 
 ```yaml
-# templates/secretspec.yaml
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
+# templates/generatedsecret.yaml
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
 metadata:
   name: {{ include "myapp.fullname" . }}-admin
   labels:
@@ -279,12 +284,12 @@ spec:
 
 Replace `myapp.fullname` and `myapp.labels` with your chart's helpers. Without
 the `omit`, `helm install` fails with `label and annotation keys must be at most
-253 characters; keys under secretspec.jabbas.eu/ and app.kubernetes.io/managed-by
+253 characters; keys under generatedsecrets.jabbas.eu/ and app.kubernetes.io/managed-by
 are reserved`.
 
 Also keep in mind the [reinstall warning](#deletionpolicy-and-reinstalls): the
 Secret generated for a chart that is uninstalled and installed again is new
-unless the `SecretSpec` uses `Retain`.
+unless the `GeneratedSecret` uses `Retain`.
 
 ## Metrics
 
@@ -295,30 +300,30 @@ OpenMetrics text format. The chart creates a Service for it
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `secretspec_reconcile_total` | counter | `result` = `ok`, `error` | Finished reconciles. |
-| `secretspec_reconcile_duration_seconds` | histogram | — | Duration of one reconcile (buckets from 5 ms). |
-| `secretspec_generations_total` | counter | `reason` = `Generated`, `Regenerated`, `Rotated` | Generation events. |
-| `secretspec_secretspecs` | gauge | `ready` = `true`, `false`, `unknown` | Number of `SecretSpec`s by `Ready` status. |
-| `secretspec_next_rotation_timestamp_seconds` | gauge | `namespace`, `name` | Unix time of the next scheduled rotation. **One series per `SecretSpec` that has `status.nextRotationTime`**, i.e. with `rotation`. |
+| `generated_secrets_reconcile_total` | counter | `result` = `ok`, `error` | Finished reconciles. |
+| `generated_secrets_reconcile_duration_seconds` | histogram | — | Duration of one reconcile (buckets from 5 ms). |
+| `generated_secrets_generations_total` | counter | `reason` = `Generated`, `Regenerated`, `Rotated` | Generation events. |
+| `generated_secrets_resources` | gauge | `ready` = `true`, `false`, `unknown` | Number of `GeneratedSecret`s by `Ready` status. |
+| `generated_secrets_next_rotation_timestamp_seconds` | gauge | `namespace`, `name` | Unix time of the next scheduled rotation. **One series per `GeneratedSecret` that has `status.nextRotationTime`**, i.e. with `rotation`. |
 
 The two gauges are computed at scrape time from the controller's cache, so a
-deleted `SecretSpec` disappears from them. Readiness is a count by state, not a
+deleted `GeneratedSecret` disappears from them. Readiness is a count by state, not a
 per-object series, so that cardinality does not grow with the number of
-`SecretSpec`s; use `kubectl get secretspecs -A` to see which ones are not ready.
+`GeneratedSecret`s; use `kubectl get generatedsecrets -A` to see which ones are not ready.
 Only the **leader** has a cache: a standby replica reports zero for the gauges
 and its counters stay at zero, so aggregate across pods (`max`, `sum`).
 
 Examples:
 
 ```promql
-# SecretSpecs that are not ready
-max(secretspec_secretspecs{ready="false"}) > 0
+# GeneratedSecrets that are not ready
+max(generated_secrets_resources{ready="false"}) > 0
 
 # reconcile errors
-sum(rate(secretspec_reconcile_total{result="error"}[10m])) > 0
+sum(rate(generated_secrets_reconcile_total{result="error"}[10m])) > 0
 
 # a rotation is overdue by more than an hour
-max by (namespace, name) (secretspec_next_rotation_timestamp_seconds) < time() - 3600
+max by (namespace, name) (generated_secrets_next_rotation_timestamp_seconds) < time() - 3600
 ```
 
 ## Logging
@@ -328,7 +333,7 @@ The operator logs to standard error, as JSON by default (`logFormat: json`;
 secret value**.
 
 `logLevel` (env `LOG_LEVEL`) is a tracing filter directive: `info` (default),
-`debug`, or per-target such as `secretspec_operator=debug,warn`.
+`debug`, or per-target such as `generated_secrets_operator=debug,warn`.
 
 **`LOG_LEVEL` can never turn on `kube_client` output.** The Kubernetes client
 library logs, at debug level, HTTP response bodies when decoding fails and API
@@ -354,7 +359,7 @@ variables):
 | `--leader-election` | `LEADER_ELECTION` | `true` | `true` or `false`. |
 | `--lease-namespace` | `POD_NAMESPACE` | — | Lease namespace; **required** with leader election. |
 | `--pod-name` | `POD_NAME` | hostname | Lease holder identity. |
-| `--lease-name` | `LEASE_NAME` | `secretspec-operator` | Lease name. |
+| `--lease-name` | `LEASE_NAME` | `generated-secrets-operator` | Lease name. |
 | `--resync-interval` | `RESYNC_INTERVAL` | `1h` | `<n>s`, `<n>m` or `<n>h`, 1 minute to 24 hours. |
 | `--http-bind` | `HTTP_BIND` | `0.0.0.0:8080` | Address of the health and metrics server. |
 | `--log-level` | `LOG_LEVEL` | `info` | Filter directive. |
@@ -367,8 +372,8 @@ no hostname file to fall back to for the identity). Apply the CRD first:
 
 ```sh
 kubectl apply --server-side \
-  -f charts/secretspec-operator/files/crd/secretspecs.secretspec.jabbas.eu.yaml
-cargo run -p secretspec-operator -- \
+  -f charts/generated-secrets-operator/files/crd/generatedsecrets.generatedsecrets.jabbas.eu.yaml
+cargo run -p generated-secrets-operator -- \
   --leader-election false --log-format text --http-bind 127.0.0.1:8080
 ```
 

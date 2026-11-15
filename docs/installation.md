@@ -7,7 +7,7 @@ same chart package:
   verify, with `cosign` or with Flux):
 
   ```text
-  oci://ghcr.io/jabbas/charts/secretspec-operator
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator
   ```
 
 - a classic **HTTP Helm repository** for the short `helm repo add` workflow.
@@ -22,13 +22,18 @@ same chart package:
 Release tags follow [semver](https://semver.org) exactly, without a `v` prefix:
 the git tag, the chart version, the chart `appVersion` and the image tag are the
 same string (`0.1.5`, `0.1.5-rc.1`, …). The container image is
-`ghcr.io/jabbas/secretspec-operator:<tag>`, built for `linux/amd64` and
+`ghcr.io/jabbas/generated-secrets-operator:<tag>`, built for `linux/amd64` and
 `linux/arm64`. From `0.1.2` it is built `FROM scratch` (the static binary and
 `/licenses/`, no shell; use `kubectl debug` for an ephemeral debug container,
 see [Operations](operations.md#debugging-inside-the-pod)); `0.1.0` and `0.1.1`
 use a distroless `static-debian12` base. There is no `latest` tag, and the chart refuses
 `image.tag=latest`. The chart's default image tag is `<appVersion>`, so a chart
 always installs the image of the same release.
+
+> **Renamed in 0.2.0:** releases up to `0.1.5` were published as
+> `secretspec-operator` (image, charts and signing identity under that name) and
+> stay installable there. Everything on this page uses the new names; see
+> [Moving from 0.1.x](../CHANGELOG.md#moving-from-01x) to upgrade.
 
 > **Legacy tag:** `0.1.0` was released under the tag `v0.1.0` (image
 > `:v0.1.0`, signing identity `refs/tags/v0.1.0`; the chart version is still
@@ -53,8 +58,8 @@ namespace first, then label it (`helm install --create-namespace` below accepts
 a namespace that already exists):
 
 ```sh
-kubectl create namespace secretspec-system
-kubectl label namespace secretspec-system pod-security.kubernetes.io/enforce=restricted
+kubectl create namespace generated-secrets-system
+kubectl label namespace generated-secrets-system pod-security.kubernetes.io/enforce=restricted
 ```
 
 ## Verify the release (optional but recommended)
@@ -68,7 +73,7 @@ for exactly that tag. Set `TAG` to the release you are installing and
 ```sh
 TAG=0.1.5                  # the git/image tag (plain semver)
 CHART_VERSION=0.1.5        # the chart version
-IDENTITY="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 ```
 
@@ -79,7 +84,7 @@ From 0.1.1 on, the tag is the plain version and equals the chart version
 Verify the image:
 
 ```sh
-cosign verify "ghcr.io/jabbas/secretspec-operator:${TAG}" \
+cosign verify "ghcr.io/jabbas/generated-secrets-operator:${TAG}" \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
 ```
@@ -87,7 +92,7 @@ cosign verify "ghcr.io/jabbas/secretspec-operator:${TAG}" \
 Verify the chart:
 
 ```sh
-cosign verify "ghcr.io/jabbas/charts/secretspec-operator:${CHART_VERSION}" \
+cosign verify "ghcr.io/jabbas/charts/generated-secrets-operator:${CHART_VERSION}" \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
 ```
@@ -98,10 +103,10 @@ platform (`amd64` or `arm64`) in the index:
 
 ```sh
 ARCH=amd64   # or arm64
-PLATFORM_DIGEST="$(docker buildx imagetools inspect "ghcr.io/jabbas/secretspec-operator:${TAG}" --raw \
+PLATFORM_DIGEST="$(docker buildx imagetools inspect "ghcr.io/jabbas/generated-secrets-operator:${TAG}" --raw \
   | jq -r --arg arch "${ARCH}" '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest')"
 
-cosign verify-attestation "ghcr.io/jabbas/secretspec-operator@${PLATFORM_DIGEST}" \
+cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_DIGEST}" \
   --type spdxjson \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
@@ -120,33 +125,33 @@ signed OCI chart is also what anchors the
 Cluster mode, a single replica:
 
 ```sh
-helm install secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm install generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system --create-namespace
+  --namespace generated-secrets-system --create-namespace
 ```
 
 For a highly available deployment, run two replicas; they use leader election
 (see [High availability](#high-availability-and-readiness)):
 
 ```sh
-helm install secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm install generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system --create-namespace \
+  --namespace generated-secrets-system --create-namespace \
   --set replicas=2
 ```
 
 Check the result:
 
 ```sh
-kubectl --namespace secretspec-system rollout status deployment/secretspec-operator
-kubectl get crd secretspecs.secretspec.jabbas.eu
+kubectl --namespace generated-secrets-system rollout status deployment/generated-secrets-operator
+kubectl get crd generatedsecrets.generatedsecrets.jabbas.eu
 ```
 
 The Deployment, the Lease and the RBAC objects are named after the *release
-fullname*: the release name when it contains `secretspec-operator`, otherwise
-`<release>-secretspec-operator`.
+fullname*: the release name when it contains `generated-secrets-operator`, otherwise
+`<release>-generated-secrets-operator`.
 
 Pass many values at once with a file (`-f values.yaml`) instead of `--set`. The
 chart ships a `values.schema.json`, so `helm install` rejects wrong types,
@@ -164,16 +169,16 @@ namespace first if you want `restricted` enforcement (see
 ```sh
 helm repo add jabbas https://jabbas.github.io/helm-charts
 helm repo update
-helm install secretspec-operator jabbas/secretspec-operator \
+helm install generated-secrets-operator jabbas/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system --create-namespace
+  --namespace generated-secrets-system --create-namespace
 ```
 
 Add `--set replicas=2` or any other value exactly as for the OCI install; every
-other section of this page applies unchanged (use `jabbas/secretspec-operator`
-wherever an example says `oci://ghcr.io/jabbas/charts/secretspec-operator`).
+other section of this page applies unchanged (use `jabbas/generated-secrets-operator`
+wherever an example says `oci://ghcr.io/jabbas/charts/generated-secrets-operator`).
 Release candidates are listed too, but Helm hides pre-releases unless you ask:
-`helm search repo jabbas/secretspec-operator --devel --versions`, or install
+`helm search repo jabbas/generated-secrets-operator --devel --versions`, or install
 with an explicit `--version 0.1.5-rc.1`.
 
 ### What is and is not verified
@@ -209,25 +214,25 @@ close your terminal:
 set -euo pipefail
 TAG=0.1.5                  # the git tag (plain semver)
 CHART_VERSION=0.1.5        # the chart version
-IDENTITY="https://github.com/jabbas/secretspec-operator/.github/workflows/release.yml@refs/tags/${TAG}"
+IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 
 # 1. Verify the OCI chart and take the manifest digest cosign actually verified.
-CHART_DIGEST="$(cosign verify "ghcr.io/jabbas/charts/secretspec-operator:${CHART_VERSION}" \
+CHART_DIGEST="$(cosign verify "ghcr.io/jabbas/charts/generated-secrets-operator:${CHART_VERSION}" \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}" \
   | jq -er '.[0].critical.image."docker-manifest-digest"')"
 
 # 2. The chart layer of that manifest (by digest, not by tag).
-LAYER_DIGEST="$(crane manifest "ghcr.io/jabbas/charts/secretspec-operator@${CHART_DIGEST}" \
+LAYER_DIGEST="$(crane manifest "ghcr.io/jabbas/charts/generated-secrets-operator@${CHART_DIGEST}" \
   | jq -er '.layers[] | select(.mediaType == "application/vnd.cncf.helm.chart.content.v1.tar+gzip") | .digest')"
-# Without crane: oras manifest fetch "ghcr.io/jabbas/charts/secretspec-operator@${CHART_DIGEST}" | jq ...  (same filter)
+# Without crane: oras manifest fetch "ghcr.io/jabbas/charts/generated-secrets-operator@${CHART_DIGEST}" | jq ...  (same filter)
 
 # 3. The package from the HTTP repository, and the digest its index entry carries.
-helm pull jabbas/secretspec-operator --version "${CHART_VERSION}" --destination .
-TGZ_DIGEST="sha256:$(sha256sum "secretspec-operator-${CHART_VERSION}.tgz" | cut -d' ' -f1)"
+helm pull jabbas/generated-secrets-operator --version "${CHART_VERSION}" --destination .
+TGZ_DIGEST="sha256:$(sha256sum "generated-secrets-operator-${CHART_VERSION}.tgz" | cut -d' ' -f1)"
 INDEX_DIGEST="sha256:$(curl -fsSL https://jabbas.github.io/helm-charts/index.yaml \
-  | CHART_VERSION="${CHART_VERSION}" yq '.entries.secretspec-operator[] | select(.version == strenv(CHART_VERSION)) | .digest')"
+  | CHART_VERSION="${CHART_VERSION}" yq '.entries.generated-secrets-operator[] | select(.version == strenv(CHART_VERSION)) | .digest')"
 
 echo "layer: ${LAYER_DIGEST}"; echo "tgz:   ${TGZ_DIGEST}"; echo "index: ${INDEX_DIGEST}"
 if [ "${LAYER_DIGEST}" = "${TGZ_DIGEST}" ] && [ "${LAYER_DIGEST}" = "${INDEX_DIGEST}" ]; then
@@ -243,7 +248,7 @@ The commands assume you ran `helm repo add jabbas …` above. A failing command
 status and an error: do not install, and please
 [report it](security.md#reporting-a-vulnerability). To install exactly the
 package you verified, use the file `helm pull` left in the current directory
-(`helm install … ./secretspec-operator-0.1.5.tgz`).
+(`helm install … ./generated-secrets-operator-0.1.5.tgz`).
 
 ### Flux
 
@@ -263,17 +268,17 @@ spec:
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: secretspec-operator
+  name: generated-secrets-operator
   namespace: flux-system
 spec:
   interval: 1h
-  releaseName: secretspec-operator
-  targetNamespace: secretspec-system
+  releaseName: generated-secrets-operator
+  targetNamespace: generated-secrets-system
   install:
     createNamespace: true
   chart:
     spec:
-      chart: secretspec-operator
+      chart: generated-secrets-operator
       version: "0.1.5"          # pin an exact version
       sourceRef:
         kind: HelmRepository
@@ -294,11 +299,11 @@ reconciles it, and the `HelmRelease` takes the chart through `chartRef`:
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: secretspec-operator
+  name: generated-secrets-operator
   namespace: flux-system
 spec:
   interval: 1h
-  url: oci://ghcr.io/jabbas/charts/secretspec-operator
+  url: oci://ghcr.io/jabbas/charts/generated-secrets-operator
   ref:
     tag: "0.1.5"
   # The Helm chart layer, passed on as the chart (needs Flux 2.3 or newer).
@@ -310,22 +315,22 @@ spec:
     matchOIDCIdentity:
       - issuer: "^https://token\\.actions\\.githubusercontent\\.com$"
         # 0.1.0 used the legacy tag v0.1.0; later releases are signed as refs/tags/<version>.
-        subject: "^https://github\\.com/jabbas/secretspec-operator/\\.github/workflows/release\\.yml@refs/tags/0\\.1\\.5$"
+        subject: "^https://github\\.com/jabbas/generated-secrets-operator/\\.github/workflows/release\\.yml@refs/tags/0\\.1\\.5$"
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: secretspec-operator
+  name: generated-secrets-operator
   namespace: flux-system
 spec:
   interval: 1h
-  releaseName: secretspec-operator
-  targetNamespace: secretspec-system
+  releaseName: generated-secrets-operator
+  targetNamespace: generated-secrets-system
   install:
     createNamespace: true
   chartRef:
     kind: OCIRepository
-    name: secretspec-operator
+    name: generated-secrets-operator
 ```
 
 ## Scope: cluster mode and namespace mode
@@ -336,24 +341,24 @@ spec:
 | `[team-a, team-b]` | One `Role` + `RoleBinding` in **each listed namespace**, and no cluster-wide permission at all | Watches only the listed namespaces. |
 
 Namespace mode is a **real RBAC boundary**, not a filter: the operator's
-ServiceAccount has no permission to see Secrets or SecretSpecs anywhere else.
-**A `SecretSpec` in a namespace that is not listed is ignored**: no Secret is
-generated, and no status or Event is written. `kubectl get secretspecs` shows an
+ServiceAccount has no permission to see Secrets or GeneratedSecrets anywhere else.
+**A `GeneratedSecret` in a namespace that is not listed is ignored**: no Secret is
+generated, and no status or Event is written. `kubectl get generatedsecrets` shows an
 empty `READY` column for it. The CRD itself is cluster-scoped, so the schema and
 CEL validation still apply to every namespace.
 
 ```sh
-helm install secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm install generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system --create-namespace \
+  --namespace generated-secrets-system --create-namespace \
   --set 'watchNamespaces={team-a,team-b}'
 ```
 
 The listed namespaces must exist when you install or upgrade (Helm creates a
 `Role` in each of them). To change the list later, run `helm upgrade` with the
 new list; the roles of removed namespaces are deleted. Do not let two releases
-watch the same namespace: both would reconcile the same SecretSpecs.
+watch the same namespace: both would reconcile the same GeneratedSecrets.
 
 The leader-election Lease lives in the release namespace and is covered by a
 separate `Role` there, in both modes.
@@ -364,7 +369,7 @@ separate `Role` there, in both modes.
 |---|---|---|
 | `global.imageRegistry` | `""` | Overrides `image.registry` when set (mirror / pull-through cache). |
 | `image.registry` | `ghcr.io` | Image registry. |
-| `image.repository` | `jabbas/secretspec-operator` | Image repository. |
+| `image.repository` | `jabbas/generated-secrets-operator` | Image repository. |
 | `image.tag` | `""` | Image tag; defaults to `<appVersion>`. `latest` is rejected. |
 | `image.digest` | `""` | `sha256:<64 hex>`; when set it is used instead of the tag. |
 | `image.pullPolicy` | `IfNotPresent` | `Always`, `IfNotPresent` or `Never`. |
@@ -372,11 +377,11 @@ separate `Role` there, in both modes.
 | `replicas` | `1` | Number of replicas. More than 1 requires `leaderElection.enabled`. |
 | `leaderElection.enabled` | `true` | Leader election through a Lease named after the release fullname. |
 | `watchNamespaces` | `[]` | `[]` = all namespaces; a list = those namespaces only. |
-| `crds.install` | `true` | Render the SecretSpec CRD. |
+| `crds.install` | `true` | Render the GeneratedSecret CRD. |
 | `crds.keep` | `true` | Add `helm.sh/resource-policy: keep` to the CRD. |
 | `resyncInterval` | `1h` | Periodic resync, `<n>s`, `<n>m` or `<n>h`, from 1 minute to 24 hours. |
 | `concurrency` | `4` | Maximum concurrent reconciles. |
-| `logLevel` | `info` | Log filter directive, e.g. `info` or `secretspec_operator=debug,warn`. See [Operations](operations.md#logging). |
+| `logLevel` | `info` | Log filter directive, e.g. `info` or `generated_secrets_operator=debug,warn`. See [Operations](operations.md#logging). |
 | `logFormat` | `json` | `json` or `text`. |
 | `http.port` | `8080` | Port of `/healthz`, `/readyz` and `/metrics`. |
 | `serviceAccount.create` | `true` | Create the ServiceAccount. |
@@ -397,7 +402,7 @@ separate `Role` there, in both modes.
 The chart fails at render time for `replicas > 1` without leader election, for
 `serviceMonitor.enabled` without `metrics.service.enabled`, and for
 `image.tag=latest`. The same table is in the
-[chart README](../charts/secretspec-operator/README.md).
+[chart README](../charts/generated-secrets-operator/README.md).
 
 ## Registry mirror, pull secrets and digest pinning
 
@@ -412,15 +417,15 @@ The image reference is built as follows:
 `imagePullSecrets` is passed to the pod unchanged:
 
 ```sh
-helm install secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm install generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system --create-namespace \
+  --namespace generated-secrets-system --create-namespace \
   --set global.imageRegistry=mirror.example.com \
   --set 'imagePullSecrets[0].name=mirror-pull'
 ```
 
-The mirror must serve the repository `jabbas/secretspec-operator` under the same
+The mirror must serve the repository `jabbas/generated-secrets-operator` under the same
 path; if it uses a different path, also set `image.repository`.
 
 To pin the image by digest (so the tag can never be re-pointed), take the digest
@@ -429,10 +434,10 @@ precedence over the tag, and a mirror that preserves digests serves the same
 image:
 
 ```sh
-helm upgrade secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm upgrade generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system \
+  --namespace generated-secrets-system \
   --reuse-values \
   --set image.digest=sha256:<64-hex-digest-from-cosign-verify>
 ```
@@ -441,7 +446,7 @@ helm upgrade secretspec-operator \
 
 ## CRD lifecycle
 
-The `SecretSpec` CRD is rendered as a normal chart template, not from Helm's
+The `GeneratedSecret` CRD is rendered as a normal chart template, not from Helm's
 `crds/` directory (Helm never upgrades the latter). `helm upgrade` therefore
 upgrades the CRD together with the operator.
 
@@ -449,11 +454,11 @@ upgrades the CRD together with the operator.
 - `crds.keep=true` (default) adds the annotation `helm.sh/resource-policy: keep`
   to the CRD, so `helm uninstall` **does not delete it**.
 
-> **Deleting the CRD deletes every `SecretSpec` in the cluster.** For
+> **Deleting the CRD deletes every `GeneratedSecret` in the cluster.** For
 > `deletionPolicy: Delete` objects, Kubernetes then garbage-collects their
 > Secrets too, which means new credentials after a reinstall. This is why
 > `helm uninstall` keeps the CRD by default. Delete it only on purpose:
-> `kubectl delete crd secretspecs.secretspec.jabbas.eu`.
+> `kubectl delete crd generatedsecrets.generatedsecrets.jabbas.eu`.
 
 ### One Helm release owns the CRD
 
@@ -465,10 +470,10 @@ A CRD is cluster-wide, so exactly one Helm release may own it.
   release.
 
   ```sh
-  helm install secretspec-operator-b \
-    oci://ghcr.io/jabbas/charts/secretspec-operator \
+  helm install generated-secrets-operator-b \
+    oci://ghcr.io/jabbas/charts/generated-secrets-operator \
     --version 0.1.5 \
-    --namespace secretspec-b --create-namespace \
+    --namespace generated-secrets-b --create-namespace \
     --set crds.install=false \
     --set 'watchNamespaces={team-b}'
   ```
@@ -484,11 +489,11 @@ A CRD is cluster-wide, so exactly one Helm release may own it.
   the release you are about to install:
 
   ```sh
-  kubectl label crd secretspecs.secretspec.jabbas.eu \
+  kubectl label crd generatedsecrets.generatedsecrets.jabbas.eu \
     app.kubernetes.io/managed-by=Helm --overwrite
-  kubectl annotate crd secretspecs.secretspec.jabbas.eu \
-    meta.helm.sh/release-name=secretspec-operator \
-    meta.helm.sh/release-namespace=secretspec-system --overwrite
+  kubectl annotate crd generatedsecrets.generatedsecrets.jabbas.eu \
+    meta.helm.sh/release-name=generated-secrets-operator \
+    meta.helm.sh/release-namespace=generated-secrets-system --overwrite
   ```
 
   Then run `helm install` with the same release name and namespace.
@@ -506,15 +511,15 @@ changed a field that the chart sets — for example someone ran
 back, repeat the upgrade with `--force-conflicts`:
 
 ```sh
-helm upgrade secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm upgrade generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system \
+  --namespace generated-secrets-system \
   --reuse-values \
   --force-conflicts
 ```
 
-Check what changed first (`kubectl get crd secretspecs.secretspec.jabbas.eu
+Check what changed first (`kubectl get crd generatedsecrets.generatedsecrets.jabbas.eu
 --show-managed-fields -o yaml`): forcing overwrites the other manager's values
 for the fields the chart sets. Helm 3 uses client-side apply and does not have
 this failure mode, but the chart is not tested with Helm 3.
@@ -522,10 +527,10 @@ this failure mode, but the chart is not tested with Helm 3.
 ## Upgrade
 
 ```sh
-helm upgrade secretspec-operator \
-  oci://ghcr.io/jabbas/charts/secretspec-operator \
+helm upgrade generated-secrets-operator \
+  oci://ghcr.io/jabbas/charts/generated-secrets-operator \
   --version 0.1.5 \
-  --namespace secretspec-system \
+  --namespace generated-secrets-system \
   --reuse-values
 ```
 
@@ -538,16 +543,16 @@ for breaking `v1alpha1` changes before upgrading.
 ## Uninstall
 
 ```sh
-helm uninstall secretspec-operator --namespace secretspec-system
+helm uninstall generated-secrets-operator --namespace generated-secrets-system
 ```
 
-With the default `crds.keep=true` the CRD, every `SecretSpec` and every
+With the default `crds.keep=true` the CRD, every `GeneratedSecret` and every
 generated Secret stay in the cluster; nothing is reconciled until the operator
-is installed again. To remove everything, including all `SecretSpec`s (and the
+is installed again. To remove everything, including all `GeneratedSecret`s (and the
 Secrets of those with `deletionPolicy: Delete`):
 
 ```sh
-kubectl delete crd secretspecs.secretspec.jabbas.eu
+kubectl delete crd generatedsecrets.generatedsecrets.jabbas.eu
 ```
 
 Credentials that are persisted by applications must use `deletionPolicy:
@@ -575,7 +580,7 @@ The pod probes use two endpoints on `http.port`:
 | Endpoint | Meaning |
 |---|---|
 | `/healthz` | `200` while the process runs (liveness and startup probe). |
-| `/readyz` | `200` after **one successful API discovery call** (the `SecretSpec` API is installed and reachable) **and** either the controllers are running (this instance is the leader, or leader election is disabled) **or** this instance is standing by as a non-leader. Otherwise `503`. |
+| `/readyz` | `200` after **one successful API discovery call** (the `GeneratedSecret` API is installed and reachable) **and** either the controllers are running (this instance is the leader, or leader election is disabled) **or** this instance is standing by as a non-leader. Otherwise `503`. |
 
 Two consequences:
 

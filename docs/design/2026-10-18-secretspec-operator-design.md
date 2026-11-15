@@ -1,5 +1,7 @@
 # SecretSpec Operator — Design
 
+> **Note:** the project was renamed to Generated Secrets Operator in 0.2.0 ([ADR 0006](../adr/0006-rename-to-generated-secrets-operator.md)). Names in this document are historical; it remains the behaviour reference, read through the name map of [the 2026-11-15 rename design](2026-11-15-rename-to-generated-secrets-operator-design.md).
+
 | | |
 |---|---|
 | **Status** | Approved by owner (2026-10-18) |

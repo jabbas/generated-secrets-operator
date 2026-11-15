@@ -11,7 +11,8 @@ Tools on `PATH`:
 - [`kind`](https://kind.sigs.k8s.io/), with a container provider. The provider
   comes from your environment; this repository's recordings use podman
   (`KIND_EXPERIMENTAL_PROVIDER=podman`). The script does not set it.
-- `helm` 4 and `kubectl` 1.31 or newer (the demo uses `kubectl wait --for=create`)
+- `helm` 4 and `kubectl` 1.31 or newer (the demo uses
+  `kubectl wait --for=create`)
 - [`kubecolor`](https://github.com/kubecolor/kubecolor) (the demo was verified
   with 0.0.25): the demo shows `kubectl` output through it, like the common
   `alias kubectl=kubecolor`. `demo.sh` defines a `kubectl` function that runs
@@ -25,13 +26,15 @@ Tools on `PATH`:
 - [`asciinema`](https://docs.asciinema.org/) 3.x
 - [`agg`](https://github.com/asciinema/agg) (asciinema GIF generator)
 
-Font, not on `PATH`: [Cascadia Code](https://github.com/microsoft/cascadia-code).
-The GIF is rendered with theme `monokai`, font size 16 and the font stack of
-asciinema.org: `Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono`.
-The first installed font wins, so the others are fallbacks; without Cascadia Code
-the GIF still renders, but looks different. On macOS:
-`brew install --cask font-cascadia-code`. The settings are `gif_font_family` and
-`gif_font_size` in `record.sh`.
+Font, not on `PATH`:
+[Cascadia Code](https://github.com/microsoft/cascadia-code). The GIF is
+rendered with theme `monokai`, font size 16 and the font stack of
+asciinema.org:
+`Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono`.
+The first installed font wins, so the others are fallbacks; without Cascadia
+Code the GIF still renders, but looks different. On macOS:
+`brew install --cask font-cascadia-code`. The settings are `gif_font_family`
+and `gif_font_size` in `record.sh`.
 
 Network access to `ghcr.io` is needed to pull the published chart and image.
 
@@ -58,14 +61,15 @@ The script:
 6. deletes the cluster whenever `kind get clusters` lists it. If that listing
    itself fails, the script prints how to delete the cluster by hand.
 
-`demo/demo.sh` is what is recorded. It also runs on its own against any cluster
-that has the operator installed with the release name `generated-secrets-operator`
-in the namespace `generated-secrets-system` (the Deployment is named after the
-release, so another release name does not work). It creates the namespace `demo`
-and refuses to run if that namespace already exists, or if it cannot tell
-(for example an unreachable cluster). Every wait for a state change is a
-`kubectl wait` or `kubectl rollout status` with a 60-second limit, so a demo
-that does not behave as shown fails instead of being recorded.
+`demo/demo.sh` is what is recorded. It also runs on its own against any
+cluster that has the operator installed with the release name
+`generated-secrets-operator` in the namespace `generated-secrets-system` (the
+Deployment is named after the release, so another release name does not work).
+It creates the namespace `demo` and refuses to run if that namespace already
+exists, or if it cannot tell (for example an unreachable cluster). Every wait
+for a state change is a `kubectl wait` or `kubectl rollout status` with a
+60-second limit, so a demo that does not behave as shown fails instead of
+being recorded.
 
 Scenes 1, 3 and 4 first show the example manifest (`yq --colors`, without the
 file's comment header), then apply it. The scenes: (1) delete a

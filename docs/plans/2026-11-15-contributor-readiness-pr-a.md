@@ -75,9 +75,9 @@
 
 - [ ] **Step 1:** Write `demo/record.sh` with this contract:
   - Argument 1: chart version (required; for example `0.2.0-rc.2`). No argument → print usage, exit 2.
-  - Checks before doing anything: `kind`, `helm`, `kubectl`, `asciinema`, `agg` on `PATH`; missing → `"<tool> not found on PATH"`, exit 1.
+  - Checks before doing anything: `kind`, `helm`, `kubectl`, `kubecolor`, `yq`, `asciinema`, `agg` on `PATH`; missing → `"<tool> not found on PATH"`, exit 1.
   - Cluster name `generated-secrets-demo`; if a kind cluster with that name already exists → refuse with a message (never delete a cluster the script did not create). Create it; a `trap` on EXIT deletes only the cluster this run created. The kind provider comes from the environment (podman on the owner's machine); the script does not set it.
-  - Install: `helm install generated-secrets-operator oci://ghcr.io/jabbas/charts/generated-secrets-operator --version "$chart_version" --namespace generated-secrets-system --create-namespace --wait`; label the namespace for Pod Security `restricted` as `docs/installation.md` does.
+  - Install: `helm install generated-secrets-operator oci://ghcr.io/jabbas/charts/generated-secrets-operator --version "$chart_version" --namespace generated-secrets-system --wait`, after creating the namespace and labelling it for Pod Security `restricted` explicitly, as `docs/installation.md` does.
   - Record: `asciinema rec` running `demo/demo.sh` with a 110×34 terminal, idle time limit 2 s, title "Generated Secrets Operator demo", output `docs/assets/demo.cast` (overwrite). Check the exact asciinema 3 flags with `asciinema rec --help`.
   - GIF: `agg` from the cast to `docs/assets/demo.gif`; choose theme/font size so the GIF is ≤ 3 MB (check `agg --help`).
 - [ ] **Step 2:** Write `demo/demo.sh`:

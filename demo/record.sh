@@ -77,7 +77,8 @@ cleanup() {
   if [[ "$cluster_created" == true ]]; then
     # kind removes a half-created cluster itself, so delete only if it is listed.
     if ! remaining_clusters="$(kind get clusters)"; then
-      echo "record.sh: could not list kind clusters; if $cluster_name exists, delete it by hand" >&2
+      echo "record.sh: could not list kind clusters; if $cluster_name exists, delete it by hand:" >&2
+      echo "  kind delete cluster --name $cluster_name" >&2
     elif grep -qx "$cluster_name" <<< "$remaining_clusters"; then
       echo "Deleting kind cluster $cluster_name" >&2
       if ! kind delete cluster --name "$cluster_name" --kubeconfig "$work_directory/kubeconfig"; then

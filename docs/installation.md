@@ -32,9 +32,9 @@ always installs the image of the same release.
 
 > **Renamed in 0.2.0:** releases up to `0.1.5` were published as
 > `secretspec-operator` (image, charts and signing identity under that name) and
-> stay installable there, including their release assets (the
-> `secretspec-operator-<version>.tgz` packages and the `secretspec-operator`
-> entries of the HTTP repository index). From `0.2.0` the assets are
+> stay installable there. Their release assets are the
+> `secretspec-operator-<version>.tgz` packages; the HTTP repository index also
+> keeps the `secretspec-operator` entries. From `0.2.0` the assets are
 > `generated-secrets-operator-<version>.tgz` and the index lists the chart as
 > `generated-secrets-operator`. Everything on this page uses the new names; see
 > [Moving from 0.1.x](../CHANGELOG.md#moving-from-01x) to upgrade.
@@ -46,7 +46,7 @@ always installs the image of the same release.
 ## Requirements
 
 - Kubernetes **1.34 or newer**. CI tests 1.34 and 1.37.
-- Helm 4. The chart is tested with Helm 4 only (CI uses v4.3.1); see
+- Helm 4. The chart is tested with Helm 4 only (CI uses v4.3.2); see
   [Helm 4 and field conflicts](#helm-4-and-field-conflicts). Helm 3 (3.8 or
   newer for the OCI channel, any Helm 3 for the HTTP repository) should work,
   but it is not tested.
@@ -236,7 +236,7 @@ LAYER_DIGEST="$(crane manifest "ghcr.io/jabbas/charts/generated-secrets-operator
 helm pull jabbas/generated-secrets-operator --version "${CHART_VERSION}" --destination .
 TGZ_DIGEST="sha256:$(sha256sum "generated-secrets-operator-${CHART_VERSION}.tgz" | cut -d' ' -f1)"
 INDEX_DIGEST="sha256:$(curl -fsSL https://jabbas.github.io/helm-charts/index.yaml \
-  | CHART_VERSION="${CHART_VERSION}" yq '.entries.generated-secrets-operator[] | select(.version == strenv(CHART_VERSION)) | .digest')"
+  | CHART_VERSION="${CHART_VERSION}" yq '.entries."generated-secrets-operator"[] | select(.version == strenv(CHART_VERSION)) | .digest')"
 
 echo "layer: ${LAYER_DIGEST}"; echo "tgz:   ${TGZ_DIGEST}"; echo "index: ${INDEX_DIGEST}"
 if [ "${LAYER_DIGEST}" = "${TGZ_DIGEST}" ] && [ "${LAYER_DIGEST}" = "${INDEX_DIGEST}" ]; then
@@ -292,7 +292,7 @@ spec:
   #   replicas: 2
 ```
 
-A semver range such as `">=0.1.0"` skips release candidates; to follow them,
+A semver range such as `">=0.2.0"` skips release candidates; to follow them,
 write the range with a pre-release part (`">=0.2.0-0"`).
 
 **For signature checking in Flux, use the OCI channel with `verify`.** An

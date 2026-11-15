@@ -152,8 +152,8 @@ the operator **adopts** it only if the Secret carries the operator's labels
 equal to the `GeneratedSecret`'s name) and has no live controller owner. It then
 keeps every value whose stored fingerprint matches, regenerates the rest, sets
 the owner reference according to `deletionPolicy`, records the new `owner-uid`
-and emits an `Adopted` Event. This is how a `Retain`ed credential survives an uninstall and a
-reinstall. A Secret that is still owned by a *deleted* `GeneratedSecret` is not
+and emits an `Adopted` Event. This is how a `Retain`ed credential survives an
+uninstall and a reinstall. A Secret that is still owned by a *deleted* `GeneratedSecret` is not
 adopted until garbage collection has removed that owner
 (`WaitingForGarbageCollection`).
 

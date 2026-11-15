@@ -1,12 +1,12 @@
 [workspace]
 resolver = "3"
-members = ["crates/secretspec-api", "crates/secretspec-core", "crates/secretspec-operator", "xtask"]
+members = ["crates/generated-secrets-api", "crates/generated-secrets-core", "crates/generated-secrets-operator", "xtask"]
 
 [workspace.package]
 version = "0.1.5"
 edition = "2024"
 license = "Apache-2.0"
-repository = "https://github.com/jabbas/secretspec-operator"
+repository = "https://github.com/jabbas/generated-secrets-operator"
 # The declared floor is the toolchain we build and test with (rust-toolchain.toml,
 # same major.minor). No crate is published, so there are no downstream users on an
 # older Rust to keep working. The MSRV-aware resolver (resolver = "3") keeps

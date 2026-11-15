@@ -1,8 +1,0 @@
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
-metadata:
-  name: v01-minimal-fields
-  namespace: test
-spec:
-  fields:
-    - name: password

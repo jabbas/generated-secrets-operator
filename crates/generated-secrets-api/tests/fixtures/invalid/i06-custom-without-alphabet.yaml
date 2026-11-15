@@ -1,0 +1,11 @@
+# expect: alphabet is required when charset is custom and only allowed then
+# layer: cel
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: i06-custom-without-alphabet
+  namespace: test
+spec:
+  fields:
+    - name: pin
+      charset: custom

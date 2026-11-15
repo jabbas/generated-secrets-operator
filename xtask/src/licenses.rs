@@ -5,7 +5,7 @@
 //! `NOTICE`, into `target/dist/licenses/` (copied to `/licenses/` in the
 //! image, see `build/Containerfile`).
 //!
-//! The crates are those `cargo tree -p secretspec-operator --edges normal
+//! The crates are those `cargo tree -p generated-secrets-operator --edges normal
 //! --target <triple>` lists, for every target in [`DIST_TARGETS`]. `cargo
 //! tree -p` resolves features for that package alone, so features that only
 //! dev-dependencies of other workspace members switch on do not leak in, and
@@ -542,7 +542,7 @@ fn write_bundle_inner(
         ..Bundle::default()
     };
     let mut index = String::new();
-    index.push_str("Third-party crates secretspec-operator is built from: its normal\n");
+    index.push_str("Third-party crates generated-secrets-operator is built from: its normal\n");
     index.push_str(
         "dependencies for the release targets (Cargo.lock), proc-macro crates included.\n",
     );
@@ -739,14 +739,17 @@ mod tests {
     #[test]
     fn parses_cargo_tree_lines() {
         let found = parse_tree(
-            "secretspec-operator v0.1.0 (/work/crates/secretspec-operator)\n\
+            "generated-secrets-operator v0.1.0 (/work/crates/generated-secrets-operator)\n\
              serde v1.0.229\n\
              serde_derive v1.0.229 (proc-macro)\n\
              serde v1.0.229 (*)\n\n",
         )
         .expect("parse");
         let names: Vec<&str> = found.iter().map(|(n, _)| n.as_str()).collect();
-        assert_eq!(names, ["secretspec-operator", "serde", "serde_derive"]);
+        assert_eq!(
+            names,
+            ["generated-secrets-operator", "serde", "serde_derive"]
+        );
         assert!(parse_tree("garbage").is_err());
         assert!(parse_tree("name 1.0.0").is_err());
     }
@@ -754,14 +757,14 @@ mod tests {
     #[test]
     fn selection_unions_targets_and_skips_workspace_members() {
         let packages = vec![
-            package("secretspec-operator", "0.1.0", None),
+            package("generated-secrets-operator", "0.1.0", None),
             package("a", "1.0.0", Some("registry+x")),
             package("b", "2.0.0", Some("registry+x")),
             package("dev-only", "1.0.0", Some("registry+x")),
         ];
         let trees = vec![
-            "secretspec-operator v0.1.0 (/w)\na v1.0.0\n".to_owned(),
-            "secretspec-operator v0.1.0 (/w)\na v1.0.0\nb v2.0.0\n".to_owned(),
+            "generated-secrets-operator v0.1.0 (/w)\na v1.0.0\n".to_owned(),
+            "generated-secrets-operator v0.1.0 (/w)\na v1.0.0\nb v2.0.0\n".to_owned(),
         ];
         let selected = select_crates(&trees, &packages).expect("select");
         assert_eq!(

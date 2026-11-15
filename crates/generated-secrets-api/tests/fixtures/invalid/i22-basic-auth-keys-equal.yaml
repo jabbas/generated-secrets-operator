@@ -1,0 +1,13 @@
+# expect: secret key names in keys must be distinct
+# layer: cel
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: i22-basic-auth-keys-equal
+  namespace: test
+spec:
+  basicAuth:
+    username: admin
+    keys:
+      username: login
+      password: login

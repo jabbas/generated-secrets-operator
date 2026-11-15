@@ -1,0 +1,10 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: v14-rotation-60m
+  namespace: test
+spec:
+  rotation:
+    interval: 60m
+  fields:
+    - name: token

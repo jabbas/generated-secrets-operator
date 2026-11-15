@@ -1,0 +1,10 @@
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: u01-type-immutable
+  namespace: test
+spec:
+  secret:
+    type: Opaque
+  basicAuth:
+    username: admin

@@ -1,0 +1,11 @@
+# expect: ecdsaCurve is only allowed with algorithm ecdsa
+# layer: cel
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
+metadata:
+  name: i17-curve-with-rsa
+  namespace: test
+spec:
+  sshKeyPair:
+    algorithm: rsa
+    ecdsaCurve: P-256

@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Website
+
+# Publishes site/ (plus the demo recording) to GitHub Pages. Independent of
+# ci.yml and release.yml: a site change never triggers or blocks a release.
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - docs/assets/demo.cast
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions: {}
+
+# One deployment at a time; never cancel one half-way.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # A manual dispatch from another branch must never publish unreviewed content.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write # publish the artifact to GitHub Pages
+      id-token: write # deploy-pages verifies the deployment source with an OIDC token
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Only the listed files are published; new site files must be added here.
+      # site/ holds no recording of its own: the one in docs/assets is copied
+      # next to index.html.
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp site/index.html site/style.css site/og.png _site/
+          cp -R site/vendor _site/vendor
+          cp docs/assets/demo.cast _site/
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

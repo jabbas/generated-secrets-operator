@@ -9,9 +9,10 @@
 # demo/demo.sh with asciinema and renders a GIF with agg. Outputs:
 #   docs/assets/demo.cast
 #   docs/assets/demo.gif
-# The cluster is deleted when the script ends, whatever the outcome. The kind
-# provider (docker or podman) comes from the environment, e.g.
-# KIND_EXPERIMENTAL_PROVIDER=podman; this script does not set it.
+# The cluster this run created is deleted when the script ends, whenever
+# `kind get clusters` lists it. The kind provider (docker or podman) comes from
+# the environment, e.g. KIND_EXPERIMENTAL_PROVIDER=podman; this script does not
+# set it.
 
 set -euo pipefail
 
@@ -76,7 +77,8 @@ cleanup() {
   if [[ "$cluster_created" == true ]]; then
     # kind removes a half-created cluster itself, so delete only if it is listed.
     if ! remaining_clusters="$(kind get clusters)"; then
-      echo "record.sh: could not list kind clusters; if $cluster_name exists, delete it by hand" >&2
+      echo "record.sh: could not list kind clusters; if $cluster_name exists, delete it by hand:" >&2
+      echo "  kind delete cluster --name $cluster_name" >&2
     elif grep -qx "$cluster_name" <<< "$remaining_clusters"; then
       echo "Deleting kind cluster $cluster_name" >&2
       if ! kind delete cluster --name "$cluster_name" --kubeconfig "$work_directory/kubeconfig"; then
@@ -104,7 +106,6 @@ kubectl label namespace "$operator_namespace" pod-security.kubernetes.io/enforce
 helm install generated-secrets-operator "$chart_reference" \
   --version "$chart_version" \
   --namespace "$operator_namespace" \
-  --create-namespace \
   --wait \
   --timeout 5m
 

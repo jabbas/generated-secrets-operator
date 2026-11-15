@@ -6,9 +6,10 @@
 # at a cluster with the operator installed in `generated-secrets-system`, and it
 # works in the namespace `demo`, which it creates.
 #
-# Every state change is awaited with `kubectl wait`; a wait that times out
-# stops the script with a non-zero exit status instead of recording a wrong
-# outcome. Only the typing delays use `sleep`.
+# Every state change is awaited with `kubectl wait` or `kubectl rollout status`,
+# each bounded by a timeout; a wait that times out stops the script with a
+# non-zero exit status instead of recording a wrong outcome. `sleep` only paces
+# the typing and the time to read the screen.
 
 set -euo pipefail
 
@@ -52,10 +53,6 @@ fail() {
   exit 1
 }
 
-pause() {
-  sleep "$1"
-}
-
 # type_text <text>: print the text one character at a time, like a human typing.
 type_text() {
   local text="$1" index
@@ -75,7 +72,7 @@ type_comment() {
   printf '%s' "$style_dim_italic"
   type_text "# $1"
   printf '%s\n' "$style_reset"
-  pause 0.4
+  sleep 0.4
 }
 
 # run_command <command>: show the command being typed after a prompt, run it,
@@ -86,7 +83,7 @@ run_command() {
   print_prompt
   type_text "$command_text"
   printf '\n'
-  pause 0.3
+  sleep 0.3
   if ! last_output="$(eval "$command_text" 2>&1)"; then
     printf '%s\n' "$last_output"
     fail "command failed: $command_text"
@@ -94,13 +91,13 @@ run_command() {
   if [[ -n "$last_output" ]]; then
     printf '%s\n' "$last_output"
   fi
-  pause 0.6
+  sleep 0.6
 }
 
 # verdict <text>: the outcome of a scene, in green.
 verdict() {
   printf '%s%s%s\n' "$style_bold_green" "$1" "$style_reset"
-  pause 1.2
+  sleep 1.2
 }
 
 # expect_same / expect_different <before> <after> <text>: verdict only if true.
@@ -123,11 +120,19 @@ start_scene() {
   printf '%s%s%s\n\n' "$style_bold" "$1" "$style_reset"
 }
 
-# show_manifest <file>: type and run `yq` to show an example manifest with YAML
-# colours (keys cyan, values green, comments grey), without the comment header
-# of the example file.
+# manifest_command <file>: the one definition of the `yq` command that shows an
+# example manifest with YAML colours (keys cyan, values green, comments grey),
+# without the comment header of the example file. Both the first frame and
+# show_manifest use it, so what is shown and what runs cannot drift. The file
+# name is shell-quoted (%q) so that it stays one argument when the text is eval'd.
+readonly manifest_command_prefix="yq --colors '. head_comment=\"\"'"
+manifest_command() {
+  printf '%s %q' "$manifest_command_prefix" "$1"
+}
+
+# show_manifest <file>: type and run the manifest_command for the file.
 show_manifest() {
-  run_command "yq --colors '. head_comment=\"\"' $1"
+  run_command "$(manifest_command "$1")"
 }
 
 # --- first frame: printed instantly, never an empty terminal ---
@@ -142,8 +147,8 @@ cd "$repo_root"
 clear
 printf '%sGenerated Secrets Operator: Kubernetes Secrets generated in-cluster%s\n\n' \
   "$style_bold" "$style_reset"
-# The same command as show_manifest, printed instead of typed.
-yq --colors '. head_comment=""' examples/app-admin-password.yaml
+# The same command as show_manifest, run instead of typed.
+eval "$(manifest_command examples/app-admin-password.yaml)"
 
 # --- preflight and setup (while the first frame is on screen) ---
 
@@ -163,7 +168,7 @@ if [[ -n "$existing_namespace" ]]; then
   fail "namespace $demo_namespace already exists; delete it first: kubectl delete namespace $demo_namespace"
 fi
 command kubectl create namespace "$demo_namespace" > /dev/null
-pause 4
+sleep 4
 
 # --- scene 1: a deleted GeneratedSecret keeps its password (deletionPolicy: Retain) ---
 
@@ -218,6 +223,9 @@ fi
 if ! generation_before="$(command kubectl get gensecret shared-token --namespace "$demo_namespace" --output 'jsonpath={.metadata.generation}')"; then
   fail "could not read the generation of shared-token"
 fi
+if [[ ! "$generation_before" =~ ^(0|[1-9][0-9]*)$ ]]; then
+  fail "expected the generation of shared-token to be a non-negative integer, got '$generation_before'"
+fi
 generation_after=$((generation_before + 1))
 type_comment "token length 48 -> 64"
 run_command "kubectl patch gensecret shared-token -n $demo_namespace --type merge -p '{\"spec\":{\"fields\":[{\"name\":\"token\",\"length\":64}]}}'"
@@ -234,7 +242,7 @@ fi
 
 # --- closing frame ---
 
-pause 1
+sleep 1
 printf '\n'
 type_comment "github.com/jabbas/generated-secrets-operator"
-pause 3
+sleep 3

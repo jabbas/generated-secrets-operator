@@ -1,15 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 apiVersion: v2
-name: secretspec-operator
-description: Kubernetes operator that generates and rotates Secrets from SecretSpec resources.
+name: generated-secrets-operator
+description: Kubernetes operator that generates and rotates Secrets from GeneratedSecret resources.
 type: application
 # Chart version = app version = image tag = git release tag (plain semver).
 # The only exception is 0.1.0, released under the legacy tag `v0.1.0`.
 version: 0.1.5
 appVersion: "0.1.5"
-home: https://github.com/jabbas/secretspec-operator
+home: https://github.com/jabbas/generated-secrets-operator
 sources:
-  - https://github.com/jabbas/secretspec-operator
+  - https://github.com/jabbas/generated-secrets-operator
 keywords:
   - secrets
   - operator

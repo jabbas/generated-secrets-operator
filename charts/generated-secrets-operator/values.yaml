@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Default values for secretspec-operator.
+# Default values for generated-secrets-operator.
 
 global:
   # -- Overrides `image.registry` when set (registry mirror / pull-through cache).
@@ -9,7 +9,7 @@ image:
   # -- Image registry; ignored when `global.imageRegistry` is set.
   registry: ghcr.io
   # -- Image repository within the registry.
-  repository: jabbas/secretspec-operator
+  repository: jabbas/generated-secrets-operator
   # -- Image tag; defaults to the chart appVersion (e.g. `0.1.2`). `latest` is rejected.
   tag: ""
   # -- Image digest (`sha256:...`); when set it is used instead of the tag.
@@ -28,13 +28,13 @@ leaderElection:
   enabled: true
 
 # -- Namespaces to watch. `[]` watches all namespaces (ClusterRole); a list
-# renders a Role per namespace and SecretSpecs elsewhere are ignored.
+# renders a Role per namespace and GeneratedSecrets elsewhere are ignored.
 watchNamespaces: []
 
 crds:
-  # -- Render the SecretSpec CRD.
+  # -- Render the GeneratedSecret CRD.
   install: true
-  # -- Keep the CRD (and every SecretSpec) on `helm uninstall`.
+  # -- Keep the CRD (and every GeneratedSecret) on `helm uninstall`.
   keep: true
 
 # -- Periodic resync interval (`<n>s|m|h`, 1m to 24h).

@@ -1,12 +1,12 @@
 {{/* SPDX-License-Identifier: Apache-2.0 */}}
-{{- include "secretspec-operator.validate" . }}
+{{- include "generated-secrets-operator.validate" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "secretspec-operator.fullname" . }}
+  name: {{ include "generated-secrets-operator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "secretspec-operator.labels" . | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicas }}
   {{- if not .Values.leaderElection.enabled }}
@@ -17,7 +17,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "secretspec-operator.selectorLabels" . | nindent 6 }}
+      {{- include "generated-secrets-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -25,12 +25,12 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "secretspec-operator.labels" . | nindent 8 }}
+        {{- include "generated-secrets-operator.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "secretspec-operator.serviceAccountName" . }}
+      serviceAccountName: {{ include "generated-secrets-operator.serviceAccountName" . }}
       automountServiceAccountToken: true
       enableServiceLinks: false
       {{- with .Values.imagePullSecrets }}
@@ -47,7 +47,7 @@ spec:
       {{- end }}
       containers:
         - name: operator
-          image: {{ include "secretspec-operator.image" . | quote }}
+          image: {{ include "generated-secrets-operator.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: WATCH_NAMESPACES
@@ -55,7 +55,7 @@ spec:
             - name: LEADER_ELECTION
               value: {{ .Values.leaderElection.enabled | toString | quote }}
             - name: LEASE_NAME
-              value: {{ include "secretspec-operator.fullname" . | quote }}
+              value: {{ include "generated-secrets-operator.fullname" . | quote }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:

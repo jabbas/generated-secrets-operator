@@ -17,8 +17,8 @@
 #   spec:
 #     basicAuth:
 #       secret: dashboard-auth
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
 metadata:
   name: dashboard-auth
 spec:

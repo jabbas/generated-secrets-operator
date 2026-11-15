@@ -3,17 +3,17 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "secretspec-operator.fullname" . }}
+  name: {{ include "generated-secrets-operator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "secretspec-operator.labels" . | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
     {{- with .Values.serviceMonitor.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   selector:
     matchLabels:
-      {{- include "secretspec-operator.selectorLabels" . | nindent 6 }}
+      {{- include "generated-secrets-operator.selectorLabels" . | nindent 6 }}
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}

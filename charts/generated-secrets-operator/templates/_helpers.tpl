@@ -1,7 +1,7 @@
 {{/* SPDX-License-Identifier: Apache-2.0 */}}
 
 {{/* Chart name, truncated to the 63-character label limit. */}}
-{{- define "secretspec-operator.name" -}}
+{{- define "generated-secrets-operator.name" -}}
 {{- .Chart.Name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -9,7 +9,7 @@
 Fully qualified app name: the release name when it already contains the
 chart name, else "<release>-<chart>". Also the leader-election lease name.
 */}}
-{{- define "secretspec-operator.fullname" -}}
+{{- define "generated-secrets-operator.fullname" -}}
 {{- if contains .Chart.Name .Release.Name }}
 {{- .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -18,29 +18,29 @@ chart name, else "<release>-<chart>". Also the leader-election lease name.
 {{- end }}
 
 {{/* Chart label value. */}}
-{{- define "secretspec-operator.chart" -}}
+{{- define "generated-secrets-operator.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/* Selector labels. */}}
-{{- define "secretspec-operator.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "secretspec-operator.name" . }}
+{{- define "generated-secrets-operator.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "generated-secrets-operator.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/* Common labels. */}}
-{{- define "secretspec-operator.labels" -}}
-helm.sh/chart: {{ include "secretspec-operator.chart" . }}
-{{ include "secretspec-operator.selectorLabels" . }}
+{{- define "generated-secrets-operator.labels" -}}
+helm.sh/chart: {{ include "generated-secrets-operator.chart" . }}
+{{ include "generated-secrets-operator.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-app.kubernetes.io/part-of: secretspec-operator
+app.kubernetes.io/part-of: generated-secrets-operator
 {{- end }}
 
 {{/* ServiceAccount name. */}}
-{{- define "secretspec-operator.serviceAccountName" -}}
+{{- define "generated-secrets-operator.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "secretspec-operator.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "generated-secrets-operator.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- required "serviceAccount.name is required when serviceAccount.create is false" .Values.serviceAccount.name }}
 {{- end }}
@@ -53,7 +53,7 @@ non-empty, else image.registry. The tag defaults to the chart appVersion
 unchanged: release tags, image tags, chart version and appVersion are the same
 semver string (no "v" prefix; only 0.1.0 was published as "v0.1.0").
 */}}
-{{- define "secretspec-operator.image" -}}
+{{- define "generated-secrets-operator.image" -}}
 {{- $registry := .Values.image.registry }}
 {{- with .Values.global }}{{- with .imageRegistry }}{{- $registry = . }}{{- end }}{{- end }}
 {{- if .Values.image.digest }}
@@ -68,7 +68,7 @@ semver string (no "v" prefix; only 0.1.0 was published as "v0.1.0").
 {{- end }}
 
 {{/* Cross-field validation of the values. */}}
-{{- define "secretspec-operator.validate" -}}
+{{- define "generated-secrets-operator.validate" -}}
 {{- if and (not .Values.leaderElection.enabled) (gt (int .Values.replicas) 1) }}
 {{- fail (printf "replicas=%d requires leaderElection.enabled=true: without leader election several replicas would reconcile concurrently" (int .Values.replicas)) }}
 {{- end }}

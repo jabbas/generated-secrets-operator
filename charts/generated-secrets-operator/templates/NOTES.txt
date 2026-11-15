@@ -1,5 +1,5 @@
 {{- /* SPDX-License-Identifier: Apache-2.0 */ -}}
-SecretSpec Operator {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
+Generated Secrets Operator {{ .Chart.AppVersion }} is installed in namespace {{ .Release.Namespace }}.
 
 {{- if empty .Values.watchNamespaces }}
 
@@ -7,18 +7,18 @@ Scope: all namespaces (ClusterRole).
 {{- else }}
 
 Scope: only these namespaces: {{ join ", " .Values.watchNamespaces }}.
-SecretSpecs in any other namespace are ignored.
+GeneratedSecrets in any other namespace are ignored.
 {{- end }}
 
 Check the operator:
 
-  kubectl --namespace {{ .Release.Namespace }} get deployment {{ include "secretspec-operator.fullname" . }}
+  kubectl --namespace {{ .Release.Namespace }} get deployment {{ include "generated-secrets-operator.fullname" . }}
 
-Create a SecretSpec, then read the generated Secret:
+Create a GeneratedSecret, then read the generated Secret:
 
-  kubectl get secretspecs --all-namespaces
+  kubectl get generatedsecrets --all-namespaces
 {{- if and .Values.crds.install .Values.crds.keep }}
 
 The CRD is kept on `helm uninstall` (crds.keep=true). Deleting the CRD
-deletes every SecretSpec in the cluster.
+deletes every GeneratedSecret in the cluster.
 {{- end }}

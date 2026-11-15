@@ -6,15 +6,15 @@ RBAC of design §9. Nothing beyond these rules may be granted.
   no cluster-scoped RBAC at all.
 - Leases: a Role + RoleBinding in the release namespace (leader election).
 */}}
-{{- define "secretspec-operator.rules" -}}
-- apiGroups: ["secretspec.jabbas.eu"]
-  resources: ["secretspecs"]
+{{- define "generated-secrets-operator.rules" -}}
+- apiGroups: ["generatedsecrets.jabbas.eu"]
+  resources: ["generatedsecrets"]
   verbs: ["get", "list", "watch"]
-- apiGroups: ["secretspec.jabbas.eu"]
-  resources: ["secretspecs/status"]
+- apiGroups: ["generatedsecrets.jabbas.eu"]
+  resources: ["generatedsecrets/status"]
   verbs: ["get", "patch", "update"]
-- apiGroups: ["secretspec.jabbas.eu"]
-  resources: ["secretspecs/finalizers"]
+- apiGroups: ["generatedsecrets.jabbas.eu"]
+  resources: ["generatedsecrets/finalizers"]
   verbs: ["update"]
 - apiGroups: [""]
   resources: ["secrets"]
@@ -23,12 +23,12 @@ RBAC of design §9. Nothing beyond these rules may be granted.
   resources: ["events"]
   verbs: ["create", "patch"]
 {{- end }}
-{{- define "secretspec-operator.subjects" -}}
+{{- define "generated-secrets-operator.subjects" -}}
 - kind: ServiceAccount
-  name: {{ include "secretspec-operator.serviceAccountName" . }}
+  name: {{ include "generated-secrets-operator.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
-{{- $fullname := include "secretspec-operator.fullname" . }}
+{{- $fullname := include "generated-secrets-operator.fullname" . }}
 {{- if empty .Values.watchNamespaces }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -36,22 +36,22 @@ kind: ClusterRole
 metadata:
   name: {{ $fullname }}
   labels:
-    {{- include "secretspec-operator.labels" . | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
 rules:
-  {{- include "secretspec-operator.rules" . | nindent 2 }}
+  {{- include "generated-secrets-operator.rules" . | nindent 2 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ $fullname }}
   labels:
-    {{- include "secretspec-operator.labels" . | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: {{ $fullname }}
 subjects:
-  {{- include "secretspec-operator.subjects" . | nindent 2 }}
+  {{- include "generated-secrets-operator.subjects" . | nindent 2 }}
 {{- else }}
 {{- range $namespace := .Values.watchNamespaces }}
 ---
@@ -61,9 +61,9 @@ metadata:
   name: {{ $fullname }}
   namespace: {{ $namespace }}
   labels:
-    {{- include "secretspec-operator.labels" $ | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" $ | nindent 4 }}
 rules:
-  {{- include "secretspec-operator.rules" $ | nindent 2 }}
+  {{- include "generated-secrets-operator.rules" $ | nindent 2 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -71,13 +71,13 @@ metadata:
   name: {{ $fullname }}
   namespace: {{ $namespace }}
   labels:
-    {{- include "secretspec-operator.labels" $ | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" $ | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: {{ $fullname }}
 subjects:
-  {{- include "secretspec-operator.subjects" $ | nindent 2 }}
+  {{- include "generated-secrets-operator.subjects" $ | nindent 2 }}
 {{- end }}
 {{- end }}
 {{- if .Values.leaderElection.enabled }}
@@ -88,11 +88,11 @@ metadata:
   name: {{ $fullname }}-leader-election
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "secretspec-operator.labels" . | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
-    resourceNames: [{{ include "secretspec-operator.fullname" . | quote }}]
+    resourceNames: [{{ include "generated-secrets-operator.fullname" . | quote }}]
     verbs: ["get", "update"]
   # `create` cannot be limited by resourceNames (the name is not known to
   # authorization before the object exists).
@@ -106,11 +106,11 @@ metadata:
   name: {{ $fullname }}-leader-election
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "secretspec-operator.labels" . | nindent 4 }}
+    {{- include "generated-secrets-operator.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: {{ $fullname }}-leader-election
 subjects:
-  {{- include "secretspec-operator.subjects" . | nindent 2 }}
+  {{- include "generated-secrets-operator.subjects" . | nindent 2 }}
 {{- end }}

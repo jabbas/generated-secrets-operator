@@ -8,11 +8,11 @@
 # consumers must pick up the change, e.g. by reading the mounted file on each
 # use or with a reloader that restarts them when the Secret changes.
 #
-# `kubectl get secretspec shared-token` shows the next rotation time.
+# `kubectl get generatedsecret shared-token` shows the next rotation time.
 #
 # Apply with: kubectl apply -n <namespace> -f rotated-shared-token.yaml
-apiVersion: secretspec.jabbas.eu/v1alpha1
-kind: SecretSpec
+apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+kind: GeneratedSecret
 metadata:
   name: shared-token
 spec:

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "secretspec-operator values",
+  "title": "generated-secrets-operator values",
   "type": "object",
   "additionalProperties": false,
   "properties": {

@@ -7,8 +7,7 @@ Design: [docs/design/2026-11-15-project-website-design.md](../docs/design/2026-1
 |---|---|
 | `index.html` | The page. Plain HTML; the player and the copy buttons are the only JavaScript. |
 | `style.css` | The only hand-written stylesheet. System fonts, dark and light through `prefers-color-scheme`. |
-| `og.png` | Social preview image, 1200×630 (`og:image`; also uploaded as the repository social preview). |
-| `og-source.html` | Source of `og.png`; not linked from the page. |
+| `og.png` | Social preview image, 1200×630 (`og:image`; also uploaded as the repository social preview). Rendered from [`docs/assets/og-source.html`](../docs/assets/og-source.html), which is not published. |
 | `vendor/asciinema-player/` | asciinema-player 3.18.0 (`asciinema-player.min.js`, `asciinema-player.css`, `LICENSE`). |
 
 The page loads the recording by the relative URL `demo.cast`. `site/` does not
@@ -40,6 +39,10 @@ release-candidate sentence.
 **Sync rule:** when the README wording of these changes, update
 `site/index.html` in the same pull request. There is no automated check.
 
+The tagline also appears in the social preview image. **When the tagline
+changes, update `site/index.html` AND `docs/assets/og-source.html`, then
+re-render `site/og.png`** (see "Regenerating `og.png`").
+
 ## No third-party requests
 
 No CDN, web font, analytics, cookie or remote image. External links are plain
@@ -70,11 +73,14 @@ work.
 
 ## Regenerating `og.png`
 
-`og.png` is a screenshot of `og-source.html` (wordmark, the README sentence, a
-cropped `app-admin.yaml` terminal; system fonts), rendered with headless Chrome.
-`og-source.html` is deployed with the site but not linked and marked `noindex`.
-When the README sentence changes, edit it there and render again:
+`og.png` is a screenshot of `docs/assets/og-source.html` (wordmark, the README
+sentence, a cropped `app-admin.yaml` terminal; system fonts). The source lives
+under `docs/assets/` so it is not published with the site. Edit it, then run
+from the repository root:
 
 ```sh
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=site/og.png "file://$PWD/site/og-source.html"
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=site/og.png "file://$PWD/docs/assets/og-source.html"
 ```
+
+Look at the result: the `apiVersion` line must end before the right edge while
+the terminal frame still reads as cropped.

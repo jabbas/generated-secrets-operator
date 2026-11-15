@@ -274,6 +274,62 @@ wait_for_pages "$pages" "$V" "$other" 2 0 > /dev/null 2> err.txt || rc=$?
 grep -q 'not ' err.txt || fail "9: error message"
 [[ $failures == "$f" ]] && pass "9: Pages check: listed -> 0, not listed -> 1, different digest -> 2"
 
+# 10. First publish of a chart into a shared index that has no key for it yet,
+#     next to a legacy entry. This is the state of the first release candidate
+#     of this repository: the shared index holds other-chart and the old
+#     secretspec-operator entries, and no generated-secrets-operator key.
+#     The name secretspec-operator below is a deliberate legacy fixture, an
+#     allowed exception in the final search (the old chart stays in the index).
+f=$failures
+V10=0.2.0-rc.1
+package "$V10"
+tgz10="pkg/generated-secrets-operator-$V10.tgz"
+digest10="$(sha "$tgz10")"
+legacy_digest="$(printf 'legacy' | sha256sum | cut -d' ' -f1)"
+other_digest="$(printf 'other' | sha256sum | cut -d' ' -f1)"
+git init -q --bare -b main legacy-remote.git
+git init -q -b main legacy-seed
+cat > legacy-seed/index.yaml << EOF
+apiVersion: v1
+generated: "2026-01-01T00:00:00Z"
+entries:
+  other-chart:
+    - name: other-chart
+      version: 1.0.0
+      apiVersion: v2
+      created: "2026-01-01T00:00:00Z"
+      digest: $other_digest
+      urls: [https://example.invalid/other-1.0.0.tgz]
+      x-custom: {a: [1, 2]}
+  secretspec-operator:
+    - name: secretspec-operator
+      version: 0.1.5
+      apiVersion: v2
+      appVersion: 0.1.5
+      created: "2026-01-01T00:00:00Z"
+      digest: $legacy_digest
+      urls: [https://example.invalid/secretspec-operator-0.1.5.tgz]
+EOF
+git -C legacy-seed -c user.name=seed -c user.email=seed@example.invalid add index.yaml
+git -C legacy-seed -c user.name=seed -c user.email=seed@example.invalid commit -q -m seed
+git -C legacy-seed push -q "$work/legacy-remote.git" HEAD:main
+git clone -q legacy-remote.git legacy-repo
+git -C legacy-remote.git show main:index.yaml > legacy-before.yaml
+publish_index legacy-repo "$tgz10" "$V10" "$digest10" "$BASE/$V10" 3 > /dev/null || fail "10: publish failed"
+git -C legacy-remote.git show main:index.yaml > legacy-after.yaml
+[[ "$(yq -o=json '.entries | keys | sort' legacy-after.yaml | jq -c .)" == '["generated-secrets-operator","other-chart","secretspec-operator"]' ]] \
+  || fail "10: the entry keys are not the expected three"
+[[ "$(yq '.entries."generated-secrets-operator" | length' legacy-after.yaml)" == 1 ]] || fail "10: not exactly one entry"
+[[ "$(index_entry_digest legacy-after.yaml "$V10")" == "$digest10" ]] || fail "10: the new entry has the wrong digest"
+[[ "$(yq -o=json '.entries."secretspec-operator"' legacy-before.yaml | jq -S -c .)" \
+  == "$(yq -o=json '.entries."secretspec-operator"' legacy-after.yaml | jq -S -c .)" ]] || fail "10: the legacy entries changed"
+[[ "$(yq -o=json '.entries."other-chart"' legacy-before.yaml | jq -S -c .)" \
+  == "$(yq -o=json '.entries."other-chart"' legacy-after.yaml | jq -S -c .)" ]] || fail "10: other-chart changed"
+[[ "$(yq -o=json 'del(.generated) | del(.entries."generated-secrets-operator")' legacy-before.yaml | jq -S -c .)" \
+  == "$(yq -o=json 'del(.generated) | del(.entries."generated-secrets-operator")' legacy-after.yaml | jq -S -c .)" ]] \
+  || fail "10: the document changed besides the new entry"
+[[ $failures == "$f" ]] && pass "10: first publish into a shared index with a legacy chart adds only the new key"
+
 if [[ $failures != 0 ]]; then
   echo "$failures check(s) failed" >&2
   exit 1

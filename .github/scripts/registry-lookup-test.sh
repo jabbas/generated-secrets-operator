@@ -10,7 +10,8 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$here/registry-lookup.sh"
 
 log="$(mktemp)"
-trap 'rm -f "$log"' EXIT
+chart_dest="$(mktemp -d)"
+trap 'rm -f "$log"; rm -rf "$chart_dest"' EXIT
 
 printf 'Error: boom\n::error::injected\r::warning::also injected\nlast line' > "$log"
 out="$(show_log "$log")"
@@ -69,11 +70,10 @@ expect_digest_error() {
 
 # expect_chart_state <description> <registry answer> <expected state>
 expect_chart_state() {
-  local description="$1" expected="$3" dest
+  local description="$1" expected="$3"
   registry_answer="$2"
-  dest="$(mktemp -d)"
   CHART_STATE=""
-  chart_state "oci://ghcr.io/example/charts/package" "1.0.0" "$dest" "$log" 2> /dev/null || {
+  chart_state "oci://ghcr.io/example/charts/package" "1.0.0" "$chart_dest" "$log" 2> /dev/null || {
     echo "FAIL: $description: chart_state returned an error" >&2
     exit 1
   }

@@ -21,10 +21,9 @@ readonly chart_reference="oci://ghcr.io/jabbas/charts/generated-secrets-operator
 readonly terminal_size="110x34"
 readonly idle_time_limit_seconds="2"
 readonly recording_title="Generated Secrets Operator demo"
-# GIF rendering: the first font that is installed wins. Monego Nerd Font Fix is
-# the recording machine's own font; Menlo and DejaVu Sans Mono are fallbacks for
-# macOS and Linux. The fonts are not part of the repository.
-readonly gif_font_family="Monego Nerd Font Fix,Menlo,DejaVu Sans Mono"
+# GIF rendering: the font stack of asciinema.org; the first installed font wins,
+# the others are fallbacks. The fonts are not part of the repository.
+readonly gif_font_family="Cascadia Code,Source Code Pro,Menlo,Consolas,DejaVu Sans Mono"
 readonly gif_font_size="16"
 
 usage() {
@@ -121,7 +120,7 @@ asciinema rec "$work_directory/demo.cast" \
 
 echo "Rendering the GIF"
 agg "$work_directory/demo.cast" "$work_directory/demo.gif" \
-  --theme dracula \
+  --theme monokai \
   --font-family "$gif_font_family" \
   --font-size "$gif_font_size" \
   --idle-time-limit "$idle_time_limit_seconds" \

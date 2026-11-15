@@ -19,10 +19,14 @@ On `PATH`:
 - [`yq`](https://github.com/mikefarah/yq) v4 (mikefarah): shows the example
   manifests with YAML colours (`yq --colors`).
 - [`asciinema`](https://docs.asciinema.org/) 3.x
-- [`agg`](https://github.com/asciinema/agg) (asciinema GIF generator). The GIF is
-  rendered with the first installed font of `Monego Nerd Font Fix`, `Menlo`,
-  `DejaVu Sans Mono` (see `gif_font_family` in `record.sh`), size 16, theme
-  `dracula` (a dark theme whose cyan is really cyan, so the YAML keys are cyan). Change them there for a different look.
+- [`agg`](https://github.com/asciinema/agg) (asciinema GIF generator) and the
+  font [Cascadia Code](https://github.com/microsoft/cascadia-code). The GIF is
+  rendered with theme `monokai`, font size 16 and the font stack of asciinema.org:
+  `Cascadia Code, Source Code Pro, Menlo, Consolas, DejaVu Sans Mono`. The first
+  installed font wins, so the others are fallbacks; without Cascadia Code the GIF
+  still renders, but looks different. On macOS:
+  `brew install --cask font-cascadia-code`. The settings are `gif_font_family` and
+  `gif_font_size` in `record.sh`.
 
 Network access to `ghcr.io` is needed to pull the published chart and image.
 

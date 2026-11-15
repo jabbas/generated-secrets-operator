@@ -1118,6 +1118,47 @@ fn chart_version_matches_workspace(ctx: &Ctx) -> Result<(), String> {
     ensure_eq("Chart appVersion", &ctx.app_version.as_str(), &workspace)
 }
 
+/// The operator image without a tag, as Artifact Hub must scan it.
+const OPERATOR_IMAGE: &str = "ghcr.io/jabbas/generated-secrets-operator";
+
+/// One entry of the `artifacthub.io/images` annotation (other fields, such as
+/// `name` and `platforms`, are not checked).
+#[derive(Debug, Deserialize)]
+struct ArtifactHubImage {
+    image: String,
+}
+
+/// Checks that the `artifacthub.io/images` annotation of `chart` (the parsed
+/// `Chart.yaml`) lists exactly the operator image, tagged with `app_version`.
+fn ensure_artifact_hub_image(chart: &Value, app_version: &str) -> Result<(), String> {
+    let annotation = str_at(chart, &["annotations", "artifacthub.io/images"])
+        .ok_or("Chart.yaml has no artifacthub.io/images annotation")?;
+    let images: Vec<ArtifactHubImage> = serde_norway::from_str(annotation)
+        .map_err(|e| format!("cannot parse the artifacthub.io/images annotation: {e}"))?;
+    let [listed] = images.as_slice() else {
+        return Err(format!(
+            "artifacthub.io/images must list exactly one image, found {}",
+            images.len()
+        ));
+    };
+    let expected_image = format!("{OPERATOR_IMAGE}:{app_version}");
+    ensure(listed.image == expected_image, || {
+        format!(
+            "artifacthub.io/images in {CHART_DIR}/Chart.yaml lists {}, expected {expected_image} \
+             (the appVersion); bump the annotation together with version and appVersion \
+             (docs/development.md, \"Bump the versions\")",
+            listed.image
+        )
+    })
+}
+
+fn chart_artifact_hub_image_matches_app_version(ctx: &Ctx) -> Result<(), String> {
+    let chart_yaml =
+        fs::read_to_string(ctx.helm.chart.join("Chart.yaml")).map_err(|e| e.to_string())?;
+    let chart: Value = serde_norway::from_str(&chart_yaml).map_err(|e| e.to_string())?;
+    ensure_artifact_hub_image(&chart, &ctx.app_version)
+}
+
 /// `resyncInterval` accepted by the schema exactly when the operator accepts
 /// it (`parse_resync_interval`: `<n>s|m|h`, 1m..=24h), checked at the range
 /// boundaries of every unit.
@@ -1185,6 +1226,10 @@ const CHECKS: &[(&str, Check)] = &[
     (
         "chart_version_matches_workspace",
         chart_version_matches_workspace,
+    ),
+    (
+        "chart_artifact_hub_image_matches_app_version",
+        chart_artifact_hub_image_matches_app_version,
     ),
 ];
 
@@ -1279,5 +1324,66 @@ mod tests {
             "no delete or wildcard verbs: {verbs:?}"
         );
         assert_eq!(verbs.len(), 7);
+    }
+
+    fn chart_with_images_annotation(images_annotation: &str) -> Value {
+        let mut annotations = serde_norway::Mapping::new();
+        annotations.insert(
+            Value::from("artifacthub.io/images"),
+            Value::from(images_annotation),
+        );
+        let mut chart = serde_norway::Mapping::new();
+        chart.insert(Value::from("annotations"), Value::Mapping(annotations));
+        Value::Mapping(chart)
+    }
+
+    #[test]
+    fn artifact_hub_image_accepts_operator_image_at_app_version() {
+        let chart = chart_with_images_annotation(
+            "- name: generated-secrets-operator\n  \
+             image: ghcr.io/jabbas/generated-secrets-operator:1.2.3\n  \
+             platforms:\n    - linux/amd64\n    - linux/arm64\n",
+        );
+        assert_eq!(ensure_artifact_hub_image(&chart, "1.2.3"), Ok(()));
+    }
+
+    #[test]
+    fn artifact_hub_image_rejects_tag_that_was_not_bumped() {
+        let chart = chart_with_images_annotation(
+            "- name: generated-secrets-operator\n  \
+             image: ghcr.io/jabbas/generated-secrets-operator:1.2.2\n",
+        );
+        let message = ensure_artifact_hub_image(&chart, "1.2.3").expect_err("stale tag");
+        assert!(message.contains("ghcr.io/jabbas/generated-secrets-operator:1.2.3"));
+        assert!(message.contains("ghcr.io/jabbas/generated-secrets-operator:1.2.2"));
+        assert!(message.contains("Bump the versions"), "{message}");
+    }
+
+    #[test]
+    fn artifact_hub_image_rejects_another_image() {
+        let chart = chart_with_images_annotation(
+            "- name: generated-secrets-operator\n  \
+             image: ghcr.io/example/generated-secrets-operator:1.2.3\n",
+        );
+        assert!(ensure_artifact_hub_image(&chart, "1.2.3").is_err());
+    }
+
+    #[test]
+    fn artifact_hub_image_requires_exactly_one_image() {
+        let two_images = chart_with_images_annotation(
+            "- image: ghcr.io/jabbas/generated-secrets-operator:1.2.3\n\
+             - image: ghcr.io/jabbas/generated-secrets-operator:1.2.3\n",
+        );
+        assert!(ensure_artifact_hub_image(&two_images, "1.2.3").is_err());
+        let no_image = chart_with_images_annotation("[]\n");
+        assert!(ensure_artifact_hub_image(&no_image, "1.2.3").is_err());
+    }
+
+    #[test]
+    fn artifact_hub_image_rejects_missing_or_malformed_annotation() {
+        let no_annotation = Value::Mapping(serde_norway::Mapping::new());
+        assert!(ensure_artifact_hub_image(&no_annotation, "1.2.3").is_err());
+        let malformed = chart_with_images_annotation("- image: [unclosed\n");
+        assert!(ensure_artifact_hub_image(&malformed, "1.2.3").is_err());
     }
 }

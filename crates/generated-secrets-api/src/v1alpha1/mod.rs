@@ -65,8 +65,8 @@ pub use status::{GeneratedSecretStatus, SecretKind};
     namespaced,
     status = "GeneratedSecretStatus",
     derive = "PartialEq",
-    doc = "A GeneratedSecret declares one Kubernetes Secret that the generated-secrets \
-           operator generates and keeps in sync. The operator creates a Secret with the same \
+    doc = "A GeneratedSecret declares one Kubernetes Secret that the Generated Secrets \
+           Operator generates and keeps in sync. The operator creates a Secret with the same \
            name in the same namespace and fills it with generated values: exactly one \
            of spec.fields (random strings and tokens), spec.sshKeyPair (an SSH key \
            pair) or spec.basicAuth (a username, a password and an htpasswd line) must \

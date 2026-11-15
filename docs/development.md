@@ -350,7 +350,10 @@ job fail otherwise (items 1-3; item 4 is documentation, checked by nothing):
 4. the documentation that names the latest published release: the `TAG` and
    `CHART_VERSION` of the verify blocks in `docs/installation.md` and
    `docs/security.md`, and the `--version` of the install examples in
-   `README.md` and `docs/installation.md`. These are not checked by any gate;
+   `README.md` and `docs/installation.md`; also the Flux examples in
+   `docs/installation.md` (the `HelmRelease` `chart.spec.version`, the
+   `OCIRepository` `ref.tag` and the version in the `subject:` regex, for
+   example `…refs/tags/0\\.2\\.0$`). These are not checked by any gate;
    update them in the release pull request, so they point at a release that
    exists once the tag is pushed.
 

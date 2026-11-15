@@ -98,12 +98,12 @@ kubectl get generatedsecret shared-token
 the Secret, whether or not an `ownerReference` exists (with
 `deletionPolicy: Retain` there is none).
 
-Under `Retain` the Secret keeps its labels and annotations but has no `ownerReference`, so
-deleting the `GeneratedSecret` leaves it untouched. Re-creating a `GeneratedSecret` with
-the same name **adopts** it: values whose definition is unchanged are kept, the
-rest are regenerated, and an `Adopted` Event is emitted. This is how a
-credential survives a reinstall. See [Security](security.md#adoption) for the
-adoption rules.
+Under `Retain` the Secret keeps its labels and annotations but has no
+`ownerReference`, so deleting the `GeneratedSecret` leaves it untouched.
+Re-creating a `GeneratedSecret` with the same name **adopts** it: values whose
+definition is unchanged are kept, the rest are regenerated, and an `Adopted`
+Event is emitted. This is how a credential survives a reinstall. See
+[Security](security.md#adoption) for the adoption rules.
 
 When to choose which:
 

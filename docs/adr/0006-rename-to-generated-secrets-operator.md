@@ -31,7 +31,7 @@ The project is renamed **Generated Secrets Operator** in release 0.2.0, and the 
 
 - Release 0.2.0 is **breaking**. There is no automatic migration; the steps are in the changelog ("Moving from 0.1.x"). Secrets created by 0.1.x are not adopted, because they carry the old labels. With `deletionPolicy: Retain` they remain as plain Secrets, and a GeneratedSecret with the same name reports `Conflict` until the old Secret is deleted or renamed.
 - Accepted risk: a cluster that runs another operator with a `GeneratedSecret` kind needs the fully qualified form `kubectl get generatedsecrets.generatedsecrets.jabbas.eu`.
-- Release freeze: from the repository rename until the rename branch is merged, no release tag is pushed, because the signing identity and the image source annotation derive from the new repository URL while the release workflow still compared them against the old one.
+- Release freeze: from the repository rename until the rename branch is merged, no release tag is pushed. At the time of the decision the reason was that the signing identity and the image source annotation derive from the new repository URL while the release workflow still compared them against the old one. The rename branch has since updated that workflow, but the freeze holds until the rename is merged.
 - Release 0.2.0 goes through the normal process: release candidate, home-lab test, promotion ([ADR 0005](0005-promote-release-candidates.md)). Anonymous pull of the new image and chart is verified after the first release candidate.
 - Old links keep working: GitHub redirects the former repository URLs, and old chart versions stay installable.
 - Promotion work (landing-page README, website, Artifact Hub listing, new demo recording) is separate follow-up work.

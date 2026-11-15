@@ -4,7 +4,7 @@
 
 **Goal:** Make the repository ready for outside contributors: `CONTRIBUTING.md`, `SECURITY.md`, issue forms, a reproducible demo recording, labels, seed and roadmap issues (pull request A of the contributor-readiness design; the README rewrite is pull request B, after 0.2.0 final).
 
-**Architecture:** One branch `docs/contributor-readiness` in the OpenCode worktree `/Users/jabbas/.local/share/opencode/worktree/74226b/contributor-readiness` (cut from `main` at `2f6c8b1`). Tasks 1–3 and 5 are files in the pull request; Task 4 is GitHub-side work through `gh` (issues and labels, not in the diff). Task 6 is the whole-branch review, the owner's review of the recording, the merge and post-merge checks. No operator code changes.
+**Architecture:** One branch `docs/contributor-readiness` in the OpenCode worktree `/Users/jabbas/.local/share/opencode/worktree/74226b/contributor-readiness` (cut from `main` at `2f6c8b1`). Tasks 1–3 produce the files in the pull request; Task 4 is GitHub-side work through `gh` (issues and labels, not in the diff). Task 5 is the whole-branch review and the pull request. Task 6 is the owner's review of the recording, the merge and the post-merge checks. No operator code changes.
 
 **Tech Stack:** Markdown, GitHub issue forms (YAML), Bash, kind (podman provider), Helm 4, kubectl, asciinema 3.x (`asciinema rec`), agg 1.9 (GIF), `gh`, `uvx check-jsonschema` (issue-form schema validation), `shellcheck` if installed.
 
@@ -23,10 +23,10 @@
 
 ## Review Focus
 
-1. **`demo/record.sh` on a machine missing a tool** (kind, helm, kubectl, asciinema, agg, crane) — expected: exits non-zero before creating anything, naming the missing tool. Test in Task 3.
+1. **`demo/record.sh` on a machine missing a tool** (kind, helm, kubectl, kubecolor, yq, asciinema, agg) — expected: exits non-zero before creating anything, naming the missing tool. Test in Task 3.
 2. **`demo/record.sh` without a chart version, or when the demo cluster already exists** — expected: usage error / refusal with a clear message, no cluster created or deleted. Test in Task 3.
 3. **A scene's state change is slow** (operator restart, regeneration after a patch) — expected: the script waits with `kubectl wait` or a bounded poll that fails with a message on timeout; never a fixed sleep standing in for a state change, never a silently wrong recording. Checked in Task 3 (review of the script) and by the recorded output.
-4. **A bug reporter pastes Secret data** — expected: the bug form only asks for commands whose output contains no Secret data (`kubectl describe gensecret …`, `kubectl get events …`, Secret metadata only) and warns prominently never to paste values. Test in Task 2.
+4. **A bug reporter pastes Secret data** — expected: the bug form only asks for commands whose output contains no Secret data (`kubectl describe gensecret …`, `kubectl get events …`, Secret metadata only), warns prominently never to paste values, and asks the reporter to replace every value under `spec.data` with `<redacted>` both in the pasted manifest and in `kubectl describe` output (which prints the spec and can echo those values). Test in Task 2.
 5. **Broken links in `CONTRIBUTING.md` / `SECURITY.md`** (relative paths and anchors such as `docs/security.md#reporting-a-vulnerability`) — expected: every link resolves. Test in Task 1.
 
 ---
@@ -56,7 +56,7 @@
 - Consumes: the URLs from Task 1.
 - Produces: labels used by the forms — `bug`, `enhancement`, `question` (GitHub defaults; Task 4 verifies they exist).
 
-- [ ] **Step 1:** `bug_report.yml` (label `bug`): a markdown block at the top with the warning, verbatim in substance: "Never paste Secret values. Generated Secrets Operator never needs them to diagnose a problem." Required fields: operator version; Kubernetes version; installation method (dropdown: Helm HTTP repository, Helm OCI, Flux, Argo CD, other); the `GeneratedSecret` manifest (render: yaml); output of `kubectl describe gensecret <name> -n <namespace>` (conditions and Events); what you expected / what happened. Optional: operator logs (`kubectl logs -n generated-secrets-system deployment/<release name>` — the operator never logs values). Do NOT ask for `kubectl get secret … -o yaml/json` or anything that prints `.data`.
+- [ ] **Step 1:** `bug_report.yml` (label `bug`): a markdown block at the top with the warning, verbatim in substance: "Never paste Secret values. Generated Secrets Operator never needs them to diagnose a problem." Required fields: operator version; Kubernetes version; installation method (dropdown: Helm HTTP repository, Helm OCI, Flux, Argo CD, other); the `GeneratedSecret` manifest (render: yaml), with every value under `spec.data` replaced by `<redacted>` because those values are copied into the Secret; output of `kubectl describe gensecret <name> -n <namespace>` (conditions and Events), with `spec.data` values replaced by `<redacted>` too, because `describe` prints the spec and can echo them; what you expected / what happened. Optional: operator logs (`kubectl logs -n generated-secrets-system deployment/<deployment name>` — the Deployment is named after the release name if that contains `generated-secrets-operator`, otherwise `<release name>-generated-secrets-operator`; the operator never logs values). Do NOT ask for `kubectl get secret … -o yaml/json` or anything that prints `.data`.
 - [ ] **Step 2:** `feature_request.yml` (label `enhancement`): use case (required), desired YAML sketch of the `GeneratedSecret` (required, render: yaml), alternatives considered, a note linking `CONTRIBUTING.md` "will not be accepted" list.
 - [ ] **Step 3:** `question.yml` (label `question`): question (required), what you already read (optional), versions (optional).
 - [ ] **Step 4:** `config.yml`: `blank_issues_enabled: false`; `contact_links`: "Documentation" → `https://github.com/jabbas/generated-secrets-operator/tree/main/docs`, "Report a security vulnerability" → `https://github.com/jabbas/generated-secrets-operator/security/policy`.

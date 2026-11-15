@@ -7,7 +7,7 @@
 **Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys.
 Declared next to your app, never stored in Git.**
 
-[![Terminal recording: a generated password survives deleting the GeneratedSecret and restarting the operator](docs/assets/demo.gif)](https://asciinema.org/a/RECORDING_ID)
+[![Terminal recording: a password survives deleting the GeneratedSecret and restarting the operator; a deleted SSH key is regenerated; a longer token length yields a new value](docs/assets/demo.gif)](https://asciinema.org/a/x5iEg5qgU8xqvcfN)
 
 You write a small `GeneratedSecret` next to your application. The operator
 creates the `Secret` with the values, once, and then leaves them alone:
@@ -59,28 +59,25 @@ kubectl wait --for=condition=Ready gensecret/app-admin --timeout=60s
 kubectl get secret app-admin -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-Apply the manifest again, or run `kubectl rollout restart deployment -n
-generated-secrets-system`, and read the password again: it is the same. Clean
-up with `kind delete cluster`.
-
-The HTTP chart repository is not signed. For the cosign-signed chart, install
-from `oci://ghcr.io/jabbas/charts/generated-secrets-operator`; both channels
-and how to verify them are in [Installation](docs/installation.md).
+Re-apply the manifest or run `kubectl rollout restart deployment -n
+generated-secrets-system`: the password stays the same. Clean up with
+`kind delete cluster`. The HTTP chart repository is not signed; for the
+cosign-signed chart and how to verify it, see
+[Installation](docs/installation.md).
 
 ## When to use it, and when not
 
-Generated Secrets Operator is for secrets a machine can invent: passwords,
-tokens, random keys, SSH key pairs, basic-auth credentials. Other tools fit
-other jobs:
+This operator is for secrets a machine can invent: passwords, tokens, random
+keys, SSH key pairs, basic-auth credentials. Other tools fit other jobs:
 
-| Tool | What it does | How it relates |
-|---|---|---|
-| [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [SOPS](https://github.com/getsops/sops) | Encrypt values a human already has, so they can be committed to Git. | The right choice for externally issued secrets. For machine-invented ones they add key management for no benefit. |
-| [External Secrets Operator](https://external-secrets.io) | Syncs secrets from an external store (Vault, Amazon Web Services and others). | The right choice when the source of truth is such a store. Its [generators](https://external-secrets.io/latest/guides/generator/) say: "The generator does not keep track of the produced values. Every invocation produces a new set of values." Stable values need extra settings (`refreshPolicy: CreatedOnce` and an immutable, orphaned target Secret). |
-| [HashiCorp Vault](https://www.vaultproject.io), [OpenBao](https://openbao.org) | A full secrets platform. | Heavy if all you need is a few generated passwords. |
-| Helm `randAlphaNum` + `lookup` | Generates a value at render time. | [`lookup` returns nothing during `helm template` and client dry-run](https://helm.sh/docs/chart_template_guide/functions_and_pipelines/), and [Argo CD does not support it](https://github.com/argoproj/argo-cd/issues/5202), so the value is regenerated. |
-| [mittwald/kubernetes-secret-generator](https://github.com/mittwald/kubernetes-secret-generator) | The best-known earlier generator; annotation-driven, on plain Secrets. | Its latest release is v3.4.1 (August 2025); the one before dates from April 2022. |
-| [Carvel secretgen-controller](https://github.com/carvel-dev/secretgen-controller) | Maintained; broader scope (secret export and import across namespaces, certificates), oriented to Carvel. | Choose it if you already use Carvel. |
+| Tool | Notes |
+|---|---|
+| [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [SOPS](https://github.com/getsops/sops) | Encrypt values a human already has, to commit them to Git. Right for externally issued secrets; for machine-invented ones they add key management for no benefit. |
+| [External Secrets Operator](https://external-secrets.io) | Syncs secrets from an external store (Vault, Amazon Web Services and others); right when the source of truth is such a store. Its [generators](https://external-secrets.io/latest/guides/generator/) say: "The generator does not keep track of the produced values. Every invocation produces a new set of values." For stable values its [documentation](https://external-secrets.io/latest/api/externalsecret/) combines `refreshPolicy: CreatedOnce`, `target.immutable: true` and `creationPolicy: Orphan`. |
+| [HashiCorp Vault](https://www.vaultproject.io), [OpenBao](https://openbao.org) | A full secrets platform; heavy if you need only a few generated passwords. |
+| Helm `randAlphaNum` + `lookup` | [`lookup` returns nothing during `helm template` and client dry-run](https://helm.sh/docs/chart_template_guide/functions_and_pipelines/), and [Argo CD does not support it](https://github.com/argoproj/argo-cd/issues/5202), so the value is regenerated. |
+| [mittwald/kubernetes-secret-generator](https://github.com/mittwald/kubernetes-secret-generator) | The best-known earlier generator: annotation-driven, on plain Secrets. Latest release v3.4.1 (August 2025); the one before is from April 2022. |
+| [Carvel secretgen-controller](https://github.com/carvel-dev/secretgen-controller) | Maintained, with a broader scope (secret export and import across namespaces, certificates); suits Carvel users. |
 
 **When not to use Generated Secrets Operator:**
 

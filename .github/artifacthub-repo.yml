@@ -3,9 +3,10 @@
 # Artifact Hub repository metadata for oci://ghcr.io/jabbas/charts/generated-secrets-operator
 # (docs/design/2026-11-15-artifact-hub-listing-design.md, §4).
 #
-# `repositoryID` is added after the owner registers the repository on
-# Artifact Hub. The file is published to the OCI repository with the
-# `oras push` command in docs/development.md ("Artifact Hub metadata").
+# `repositoryID` comes from the repository's registration on Artifact Hub.
+# The file is published to the OCI repository with the `oras push` command
+# in docs/development.md ("Artifact Hub metadata").
+repositoryID: ba386f98-ca98-4d3b-9f4a-f1012397eda8
 
 # Hide release candidates: Artifact Hub would otherwise show the highest
 # semver, X.Y.Z-rc.N, as the latest version until the final release.

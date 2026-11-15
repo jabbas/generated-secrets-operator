@@ -23,9 +23,9 @@ the Secrets they live in.
   restart, upgrade, cache loss, leader change or re-apply of an identical
   manifest. A golden test pins the fingerprint format.
 - **The operator being talked into touching a Secret it did not create.** It
-  writes only Secrets that carry its `managed-by` and `owner-name` labels (or that
-  do not exist). Any other Secret with the target name yields a `Conflict` and is
-  left alone, never adopted.
+  writes only Secrets that carry its `app.kubernetes.io/managed-by` and
+  `generatedsecrets.jabbas.eu/owner-name` labels (or that do not exist). Any other
+  Secret with the target name yields a `Conflict` and is left alone, never adopted.
 - **Privilege escalation through the `GeneratedSecret` API.** Anyone who may create
   `GeneratedSecret`s can make the operator create Secrets in that namespace, so
   `secret.type` is limited to `Opaque`, `kubernetes.io/basic-auth`,
@@ -148,13 +148,14 @@ The only place a value is written is the Secret itself.
 
 When a `GeneratedSecret` is created and a Secret with its name already exists,
 the operator **adopts** it only if the Secret carries the operator's labels
-(`app.kubernetes.io/managed-by: generated-secrets-operator` and an `owner-name`
-equal to the `GeneratedSecret`'s name) and has no live controller owner. It then
-keeps every value whose stored fingerprint matches, regenerates the rest, sets
-the owner reference according to `deletionPolicy`, records the new `owner-uid`
-and emits an `Adopted` Event. This is how a `Retain`ed credential survives an
-uninstall and a reinstall. A Secret that is still owned by a *deleted* `GeneratedSecret` is not
-adopted until garbage collection has removed that owner
+(`app.kubernetes.io/managed-by: generated-secrets-operator` and a
+`generatedsecrets.jabbas.eu/owner-name` equal to the `GeneratedSecret`'s name)
+and has no live controller owner. It then keeps every value whose stored
+fingerprint matches, regenerates the rest, sets the owner reference according to
+`deletionPolicy`, records the new `generatedsecrets.jabbas.eu/owner-uid`, and
+emits an `Adopted` Event. This is how a `Retain`ed credential survives an
+uninstall and a reinstall. A Secret that is still owned by a *deleted*
+`GeneratedSecret` is not adopted until garbage collection has removed that owner
 (`WaitingForGarbageCollection`).
 
 Adoption is decided by labels. Anyone who can create Secrets in a namespace could

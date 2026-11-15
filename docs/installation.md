@@ -19,6 +19,10 @@ same chart package:
   https://jabbas.github.io/helm-charts
   ```
 
+The chart is also listed on
+[Artifact Hub](https://artifacthub.io/packages/helm/generated-secrets-operator/generated-secrets-operator),
+where you can browse its versions, values and README.
+
 Release tags follow [semver](https://semver.org) exactly, without a `v` prefix:
 the git tag, the chart version, the chart `appVersion` and the image tag are the
 same string (`0.2.0`, `0.2.0-rc.1`, …). The container image is

@@ -59,6 +59,7 @@ Section 10 lists what is deliberately left to the builder.
 - A separate `ROADMAP.md` file: a README section is enough. **[architect]**
 - A social preview image: deferred to the website project. **[architect]**
 - A code of conduct and a pull-request template: deliberately left out ("if it doesn't exist, it can't break"); `CONTRIBUTING.md` carries the expectations. GitHub's community-profile checklist flagging them is accepted. **[architect]**
+- Code changes to the operator.
 
 ### 2.2a Sequencing and who does what **[architect]**
 
@@ -68,7 +69,6 @@ Section 10 lists what is deliberately left to the builder.
 - **GitHub-side work (§8) is done by the agent with the `gh` command-line tool**, not by the owner, including enabling private vulnerability reporting. If the rename plan's owner step already set the description and topics, the agent only verifies them against §8.
 - Roadmap and seed issues are filed in pull request A's phase, so their numbers exist when pull request B writes the README.
 - **[owner]** The README demo GIF links to the recording on asciinema.org (the owner published the previous recording at https://asciinema.org/a/Mp19PiTeiHCqkGSC). That recording still shows the old names, so the new recording (§7) is uploaded to asciinema.org as well and the README links the new URL; the old upload is then deleted by the owner. The website keeps its own vendored player (no third-party requests).
-- Code changes to the operator.
 
 ### 2.3 Anti-goals (a failure even if it "works")
 
@@ -81,7 +81,7 @@ Section 10 lists what is deliberately left to the builder.
 In this order; items 1–6 SHOULD fit in about two screens.
 
 1. **Name and one sentence**, for example: "Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys. Declared next to your app, never stored in Git." A few badges only: latest release, CI status, licence. The Artifact Hub badge is added later by project 3.
-2. **Demo GIF** (Graphics Interchange Format) — `docs/assets/demo.gif` (§7); no link for now (§2.2a).
+2. **Demo GIF** (Graphics Interchange Format) — `docs/assets/demo.gif` (§7); linking to the recording on asciinema.org (§2.2a).
 3. **The smallest possible manifest** — about 6 lines, kind `GeneratedSecret`.
 4. **"Why"** — three pains the reader recognises:
    - Helm `randAlphaNum` + `lookup` regenerates values under Argo CD and `helm template`;

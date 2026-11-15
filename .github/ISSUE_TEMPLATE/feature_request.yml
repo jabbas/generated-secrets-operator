@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a change or an addition to the GeneratedSecret API or the operator.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The operator has a narrow scope. Before you write a request, read the list of changes that will not be accepted in [CONTRIBUTING.md](https://github.com/jabbas/generated-secrets-operator/blob/main/CONTRIBUTING.md#what-will-not-be-accepted).
+
+        The API is public and hard to change, so a new feature is discussed in an issue before any pull request.
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What are you trying to do, and what stops you today?
+    validations:
+      required: true
+  - type: textarea
+    id: desired-yaml
+    attributes:
+      label: Desired YAML
+      description: A sketch of the `GeneratedSecret` you would like to write. It does not need to be complete.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways you tried or considered, including other tools.
+    validations:
+      required: false

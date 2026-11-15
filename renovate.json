@@ -32,7 +32,7 @@
       "versioningTemplate": "rust-release-channel"
     },
     {
-      "description": "Release tool versions, pinned next to a `# renovate: datasource=… depName=…` comment (GitHub release binaries: cosign in release.yml, syft, grype, crane, oras in install-release-tools.sh, yq in install-yq.sh). `extractVersion` strips the `v` of tags whose pin has none. The pinned SHA-256 checksums are NOT updated, see the packageRules. (helm and kind are pinned in `with: version:` of setup-helm / kind-action, which the github-actions manager reads itself.)",
+      "description": "Release tool versions, pinned next to a `# renovate: datasource=… depName=…` comment (GitHub release binaries: cosign in release.yml, syft, grype, crane, oras, actionlint in install-release-tools.sh, yq in install-yq.sh). `extractVersion` strips the `v` of tags whose pin has none. The pinned SHA-256 checksums are NOT updated, see the packageRules. (helm and kind are pinned in `with: version:` of setup-helm / kind-action, which the github-actions manager reads itself.)",
       "customType": "regex",
       "managerFilePatterns": [
         "/^\\.github/workflows/[^/]+\\.yml$/",
@@ -178,6 +178,7 @@
         "anchore/grype",
         "google/go-containerregistry",
         "oras-project/oras",
+        "rhysd/actionlint",
         "mikefarah/yq",
         "cargo-zigbuild",
         "cargo-auditable",
@@ -226,10 +227,11 @@
         "anchore/grype",
         "google/go-containerregistry",
         "oras-project/oras",
+        "rhysd/actionlint",
         "mikefarah/yq"
       ],
       "prBodyNotes": [
-        "**Update the matching SHA-256 in this PR before merging**: `SYFT_SHA256` / `GRYPE_SHA256` / `CRANE_SHA256` / `ORAS_SHA256` in `.github/scripts/install-release-tools.sh`, `YQ_SHA256` in `.github/scripts/install-yq.sh`. Take it from the checksums file of the new upstream release (the `linux_amd64` / `Linux_x86_64` archive; see docs/development.md, \"Pinned tools and Renovate\"). A version bump without it fails closed (`sha256sum --check`): the `release-pins` and `release-scripts` CI jobs of this PR fail with the variable named."
+        "**Update the matching SHA-256 in this PR before merging**: `SYFT_SHA256` / `GRYPE_SHA256` / `CRANE_SHA256` / `ORAS_SHA256` / `ACTIONLINT_SHA256` in `.github/scripts/install-release-tools.sh`, `YQ_SHA256` in `.github/scripts/install-yq.sh`. Take it from the checksums file of the new upstream release (the `linux_amd64` / `Linux_x86_64` archive; see docs/development.md, \"Pinned tools and Renovate\"). A version bump without it fails closed (`sha256sum --check`): the `release-pins` and `release-scripts` CI jobs of this PR fail with the variable named."
       ]
     },
     {

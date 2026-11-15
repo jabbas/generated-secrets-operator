@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>Generated Secrets Operator — Kubernetes Secrets generated in-cluster</title>
+<meta name="description" content="Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys. Declared next to your app; the values are never stored in Git.">
+<link rel="canonical" href="https://generatedsecrets.jabbas.eu/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23101413'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' text-anchor='middle' fill='%234EC9A0'%3E$_%3C/text%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Generated Secrets Operator">
+<meta property="og:title" content="Generated Secrets Operator — Kubernetes Secrets generated in-cluster">
+<meta property="og:description" content="Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys. Declared next to your app; the values are never stored in Git.">
+<meta property="og:url" content="https://generatedsecrets.jabbas.eu/">
+<meta property="og:image" content="https://generatedsecrets.jabbas.eu/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Generated Secrets Operator: a GeneratedSecret manifest next to the project tagline">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="vendor/asciinema-player/asciinema-player.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!--
+  Copy rule: the one sentence, "Why" and "Try it in 5 minutes" are ported from the
+  repository README.md. When the README wording of those changes, update this file
+  in the same pull request (see site/README.md).
+-->
+
+<header class="site-header">
+  <div class="bar">
+    <div class="container bar-inner">
+      <p class="wordmark"><span class="prompt" aria-hidden="true">$_</span> Generated Secrets Operator</p>
+      <nav class="bar-nav" aria-label="Main">
+        <a href="https://github.com/jabbas/generated-secrets-operator/tree/main/docs">Docs</a>
+        <a href="https://github.com/jabbas/generated-secrets-operator">GitHub</a>
+      </nav>
+    </div>
+  </div>
+  <div class="container hero">
+    <h1>Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys. Declared next to your app; the values are never stored in Git.</h1>
+    <p class="actions">
+      <a class="button button-primary" href="#try">Try it in 5 minutes</a>
+      <a class="button" href="https://github.com/jabbas/generated-secrets-operator">GitHub</a>
+    </p>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="section" aria-labelledby="demo-title">
+    <h2 id="demo-title" class="visually-hidden">Demo</h2>
+    <figure class="demo">
+      <div class="terminal">
+        <div class="terminal-bar" aria-hidden="true">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="terminal-title">generated-secrets-operator — demo</span>
+          <span class="dots-spacer"></span>
+        </div>
+        <div id="demo-player"></div>
+        <noscript>
+          <p class="demo-fallback">
+            The interactive player needs JavaScript.
+            <a href="https://github.com/jabbas/generated-secrets-operator/blob/main/docs/assets/demo.gif">Watch the recording as an animated GIF on GitHub</a>.
+          </p>
+        </noscript>
+      </div>
+      <figcaption>
+        <p class="caption">The operator creates the Secret <code>app-admin</code> with a generated 32-character password — once.</p>
+        <p class="caption-note">asciinema recording</p>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="section" id="why" aria-labelledby="why-title">
+    <h2 id="why-title">Why</h2>
+    <ol class="pains">
+      <li>Helm's <code>randAlphaNum</code> with <code>lookup</code> generates a new value under Argo CD and <code>helm template</code>, because <code>lookup</code> returns nothing there.</li>
+      <li>Encrypting a password with SOPS (Secrets OPerationS) or Sealed Secrets adds key management when no human needs to know the password.</li>
+      <li>A pipeline that exists only to generate a key is a pipeline to maintain.</li>
+    </ol>
+    <p class="promise">The one promise: <strong>a value changes only when you decide</strong> — you change its definition, delete the Secret (or one key), or configure a rotation. It does not change when the operator restarts or is upgraded, when its cache is lost, or when you re-apply the same manifest.</p>
+  </section>
+
+  <section class="section" id="try" aria-labelledby="try-title">
+    <h2 id="try-title">Try it in 5 minutes</h2>
+    <p>You need <code>kind</code>, Helm 4 and <code>kubectl</code>; no clone is needed. The <code>kind</code> image below runs Kubernetes 1.34, the oldest supported version.</p>
+
+    <div class="code">
+      <div class="code-bar">
+        <span class="code-label">shell</span>
+        <button class="copy" type="button" hidden aria-label="Copy the install commands"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3v5.5A1.5 1.5 0 0 0 3.5 10H4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="copy-label">Copy</span></button>
+      </div>
+<pre tabindex="0"><code><span class="cmd">kind</span> create cluster --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d
+<span class="cmd">helm</span> repo add jabbas https://jabbas.github.io/helm-charts
+<span class="cmd">helm</span> install generated-secrets-operator jabbas/generated-secrets-operator --namespace generated-secrets-system --create-namespace --wait
+<span class="cmd">kubectl</span> apply -f - &lt;&lt;'EOF'
+<span class="k">apiVersion</span>: generatedsecrets.jabbas.eu/v1alpha1
+<span class="k">kind</span>: GeneratedSecret
+<span class="k">metadata</span>:
+  <span class="k">name</span>: app-admin
+<span class="k">spec</span>:
+  <span class="k">deletionPolicy</span>: Retain
+  <span class="k">data</span>:
+    <span class="k">username</span>: admin
+  <span class="k">fields</span>:
+    - <span class="k">name</span>: password
+EOF
+<span class="cmd">kubectl</span> wait --for=condition=Ready gensecret/app-admin --timeout=60s
+<span class="cmd">kubectl</span> get secret app-admin -o jsonpath='{.data.password}' | <span class="cmd">base64</span> -d; echo</code></pre>
+    </div>
+
+    <p>Restart the operator and read the password again; it stays the same:</p>
+
+    <div class="code">
+      <div class="code-bar">
+        <span class="code-label">shell</span>
+        <button class="copy" type="button" hidden aria-label="Copy the restart commands"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3v5.5A1.5 1.5 0 0 0 3.5 10H4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="copy-label">Copy</span></button>
+      </div>
+<pre tabindex="0"><code><span class="cmd">kubectl</span> rollout restart deployment/generated-secrets-operator -n generated-secrets-system
+<span class="cmd">kubectl</span> rollout status deployment/generated-secrets-operator -n generated-secrets-system
+<span class="cmd">kubectl</span> get secret app-admin -o jsonpath='{.data.password}' | <span class="cmd">base64</span> -d; echo</code></pre>
+    </div>
+
+    <p>Clean up:</p>
+
+    <div class="code">
+      <div class="code-bar">
+        <span class="code-label">shell</span>
+        <button class="copy" type="button" hidden aria-label="Copy the clean-up command"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3v5.5A1.5 1.5 0 0 0 3.5 10H4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="copy-label">Copy</span></button>
+      </div>
+<pre tabindex="0"><code><span class="cmd">kind</span> delete cluster</code></pre>
+    </div>
+
+    <p class="note">The HTTP chart repository is not signed; for the cosign-signed chart and how to verify it, see <a href="https://github.com/jabbas/generated-secrets-operator/blob/main/docs/installation.md">Installation</a>.</p>
+  </section>
+
+  <section class="section" id="when" aria-labelledby="when-title">
+    <h2 id="when-title">When to use it, and when not</h2>
+    <div class="split">
+      <div class="split-cell">
+        <h3>Use it for</h3>
+        <p>Secrets a machine can invent: passwords, tokens, random keys, SSH key pairs, basic-auth credentials.</p>
+      </div>
+      <div class="split-cell">
+        <h3>Do not use it when</h3>
+        <ul>
+          <li>The secret is issued by someone else (a vendor API key, another team's password).</li>
+          <li>The value must be known before deployment, or be identical across clusters.</li>
+          <li>The values must survive losing the cluster. They live only in the cluster, in etcd (the Kubernetes data store); back up the Secrets, for example with <a href="https://velero.io">Velero</a>.</li>
+        </ul>
+      </div>
+    </div>
+    <p>Other tools fit other jobs:</p>
+    <ul class="tools">
+      <li><a href="https://github.com/bitnami-labs/sealed-secrets">Sealed Secrets</a>, <a href="https://github.com/getsops/sops">SOPS</a>: encrypt values a human already has, to commit them to Git.</li>
+      <li><a href="https://external-secrets.io">External Secrets Operator</a>: syncs secrets from an external store; right when that store is the source of truth.</li>
+      <li><a href="https://www.vaultproject.io">HashiCorp Vault</a>, <a href="https://openbao.org">OpenBao</a>: a full secrets platform; heavy if you need only a few generated passwords.</li>
+      <li>Helm <code>randAlphaNum</code> + <code>lookup</code>: the value is regenerated under <code>helm template</code> and Argo CD.</li>
+    </ul>
+    <p class="note">Generated values are ordinary Secrets: readable with <code>get secrets</code>, and unencrypted in etcd unless encryption at rest is enabled (see <a href="https://github.com/jabbas/generated-secrets-operator/blob/main/docs/security.md">Security</a>).</p>
+    <p><a class="more" href="https://github.com/jabbas/generated-secrets-operator#when-to-use-it-and-when-not">Full comparison in the README →</a></p>
+  </section>
+
+  <section class="section" id="trust" aria-labelledby="trust-title">
+    <h2 id="trust-title">Built to be trusted</h2>
+    <ul class="checks">
+      <li>Apache-2.0</li>
+      <li>cosign-signed multi-architecture images with an SBOM (software bill of materials)</li>
+      <li><code>FROM scratch</code> image</li>
+      <li>Least-privilege RBAC (role-based access control); values never in logs, Events, status or metrics</li>
+      <li>Every release is promoted from a release candidate that passed a test on a real cluster</li>
+      <li>Written in Rust</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <ul class="footer-links">
+      <li><a href="https://github.com/jabbas/generated-secrets-operator/tree/main/docs">Documentation</a></li>
+      <li><a href="https://github.com/jabbas/generated-secrets-operator/blob/main/CHANGELOG.md">Changelog</a></li>
+      <li><a href="https://github.com/jabbas/generated-secrets-operator/blob/main/SECURITY.md">Security policy</a></li>
+      <li><a href="https://github.com/jabbas/generated-secrets-operator">GitHub</a></li>
+    </ul>
+    <p class="made-by">Made by <a href="https://github.com/jabbas">Grzegorz Dzięgielewski</a></p>
+  </div>
+</footer>
+
+<script src="vendor/asciinema-player/asciinema-player.min.js"></script>
+<script>
+  AsciinemaPlayer.create('demo.cast', document.getElementById('demo-player'), {
+    poster: 'npt:0:01',
+    fit: 'width',
+    idleTimeLimit: 2,
+    autoplay: false
+  });
+
+  document.querySelectorAll('.code').forEach(function (block) {
+    var button = block.querySelector('.copy');
+    var label = block.querySelector('.copy-label');
+    var code = block.querySelector('pre');
+    if (!button || !navigator.clipboard) { return; }
+    button.hidden = false;
+    button.addEventListener('click', function () {
+      navigator.clipboard.writeText(code.textContent).then(function () {
+        label.textContent = 'Copied';
+      }, function () {
+        label.textContent = 'Copy failed';
+      });
+      setTimeout(function () { label.textContent = 'Copy'; }, 1500);
+    });
+  });
+</script>
+</body>
+</html>

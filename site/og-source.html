@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<!-- Source of og.png (see README.md in this directory). Not linked from the page. -->
+<title>Generated Secrets Operator — social preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    position: relative;
+    background: #101413;
+    color: #E6EBE9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  .left {
+    position: absolute; left: 64px; top: 64px; bottom: 64px; width: 560px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .wordmark { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+  .wordmark span { color: #4EC9A0; font-weight: 400; margin-right: 10px; }
+  h1 { text-wrap: balance; margin-top: 36px; font-size: 38px; line-height: 1.22; font-weight: 600; letter-spacing: -0.02em; }
+  .footer-line { font-size: 17px; color: #9AA5A1; }
+  .terminal {
+    position: absolute; left: 676px; top: 100px; right: -80px; bottom: -80px;
+    background: #0B0F0E; border: 1px solid #26302D; border-radius: 6px 0 0 0;
+    overflow: hidden;
+  }
+  .bar {
+    height: 46px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+    background: #161C1A; border-bottom: 1px solid #26302D; font-size: 14px; color: #9AA5A1;
+  }
+  .dots { display: flex; gap: 8px; width: 60px; }
+  .dots i { width: 12px; height: 12px; border-radius: 50%; background: #26302D; }
+  pre { padding: 28px; font-size: 21px; line-height: 1.7; white-space: pre; }
+  .k { color: #4EC9A0; }
+  .hl { display: inline-block; margin: 0 -28px; padding: 0 28px; width: calc(100% + 56px); background: rgba(78, 201, 160, 0.10); border-left: 2px solid #4EC9A0; padding-left: 26px; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div>
+      <p class="wordmark mono"><span>$_</span>Generated Secrets Operator</p>
+      <h1>Generate Kubernetes Secrets <span style="white-space:nowrap">in-cluster:</span> passwords, tokens, SSH keys. Declared next to your app; the values are never stored in Git.</h1>
+    </div>
+    <p class="footer-line mono">generatedsecrets.jabbas.eu · Apache-2.0 · Rust</p>
+  </div>
+  <div class="terminal mono">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span><span>app-admin.yaml</span><span style="width:60px"></span></div>
+<pre><span class="k">apiVersion:</span> generatedsecrets.jabbas.eu/v1alpha1
+<span class="hl"><span class="k">kind:</span> GeneratedSecret</span>
+<span class="k">metadata:</span>
+  <span class="k">name:</span> app-admin
+<span class="k">spec:</span>
+  <span class="k">fields:</span>
+    - <span class="k">name:</span> password</pre>
+  </div>
+</body>
+</html>

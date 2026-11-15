@@ -1,0 +1,28 @@
+name: Question
+description: Ask how something works or how to use it.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste Secret values.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+  - type: textarea
+    id: already-read
+    attributes:
+      label: What you already read (optional)
+      description: Documentation pages or issues you checked, so the answer does not repeat them.
+    validations:
+      required: false
+  - type: input
+    id: versions
+    attributes:
+      label: Versions (optional)
+      description: Operator version and Kubernetes version, if they matter for the question.
+    validations:
+      required: false

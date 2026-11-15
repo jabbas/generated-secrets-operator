@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/jabbas/generated-secrets-operator/tree/main/docs
+    about: Installation, operations, security and API reference.
+  - name: Report a security vulnerability
+    url: https://github.com/jabbas/generated-secrets-operator/security/policy
+    about: Report vulnerabilities privately. Do not open a public issue.

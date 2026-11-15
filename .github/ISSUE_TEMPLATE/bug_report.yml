@@ -1,0 +1,66 @@
+name: Bug report
+description: Something does not work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never paste Secret values.** Generated Secrets Operator never needs them to diagnose a problem.
+
+        Do not paste the output of commands that print Secret contents. If you are unsure whether something contains a value, leave it out.
+  - type: input
+    id: operator-version
+    attributes:
+      label: Operator version
+      description: The chart or image version you run, for example `0.2.0`.
+    validations:
+      required: true
+  - type: input
+    id: kubernetes-version
+    attributes:
+      label: Kubernetes version
+      description: The server version from `kubectl version`, for example `v1.34.1`.
+    validations:
+      required: true
+  - type: dropdown
+    id: installation-method
+    attributes:
+      label: Installation method
+      options:
+        - Helm HTTP repository
+        - Helm OCI
+        - Flux
+        - Argo CD
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: manifest
+    attributes:
+      label: GeneratedSecret manifest
+      description: The `GeneratedSecret` that shows the problem. It contains the definition only, not generated values.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: describe-output
+    attributes:
+      label: Output of kubectl describe
+      description: Output of `kubectl describe gensecret <name> -n <namespace>`. The conditions and Events are what matter.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected-and-actual
+    attributes:
+      label: What you expected and what happened
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Operator logs (optional)
+      description: Output of `kubectl logs -n generated-secrets-system deployment/<release name>`. The operator never logs values.
+      render: text
+    validations:
+      required: false

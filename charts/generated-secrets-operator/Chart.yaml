@@ -15,5 +15,43 @@ keywords:
   - operator
   - password
   - ssh
+# Artifact Hub metadata (docs/design/2026-11-15-artifact-hub-listing-design.md, §3).
 annotations:
+  artifacthub.io/category: security
   artifacthub.io/license: Apache-2.0
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Seamless Upgrades
+  artifacthub.io/crds: |
+    - kind: GeneratedSecret
+      version: v1alpha1
+      name: generatedsecrets.generatedsecrets.jabbas.eu
+      displayName: Generated Secret
+      description: Declares a Secret whose values (passwords, tokens, random bytes, SSH key pairs or basic-auth credentials) the operator generates once and keeps stable.
+  # Copy of examples/app-admin-password.yaml (without its comments); keep the two
+  # in sync. `cargo xtask chart-test` checks it.
+  artifacthub.io/crdsExamples: |
+    - apiVersion: generatedsecrets.jabbas.eu/v1alpha1
+      kind: GeneratedSecret
+      metadata:
+        name: app-admin
+      spec:
+        deletionPolicy: Retain
+        data:
+          username: admin
+        fields:
+          - name: password
+  # The tag is the committed appVersion; bump it with version and appVersion
+  # (docs/development.md, "Bump the versions"). `cargo xtask chart-test` checks it.
+  artifacthub.io/images: |
+    - name: generated-secrets-operator
+      image: ghcr.io/jabbas/generated-secrets-operator:0.2.0
+      platforms:
+        - linux/amd64
+        - linux/arm64
+  artifacthub.io/links: |
+    - name: source
+      url: https://github.com/jabbas/generated-secrets-operator
+    - name: documentation
+      url: https://github.com/jabbas/generated-secrets-operator/tree/main/docs
+    - name: support
+      url: https://github.com/jabbas/generated-secrets-operator/issues

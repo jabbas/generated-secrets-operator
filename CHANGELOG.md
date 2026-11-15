@@ -62,6 +62,12 @@ delete or rename the old Secret. With `deletionPolicy: Delete` (the default),
 the Secret is garbage-collected together with the `SecretSpec`, so deleting the
 old objects removes it.
 
+### Added
+
+- Artifact Hub metadata in the chart (`artifacthub.io/*` annotations: category,
+  operator capabilities, the `GeneratedSecret` CRD with an example, the image
+  to scan and links), in preparation for listing the OCI chart on Artifact Hub.
+
 ### Changed
 
 - The workspace declares Rust 1.99 as its minimum version (the toolchain it is

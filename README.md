@@ -7,6 +7,8 @@
 **Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys.
 Declared next to your app; the values are never stored in Git.**
 
+Website: https://generatedsecrets.jabbas.eu
+
 [![Terminal recording: a password survives deleting the GeneratedSecret and restarting the operator; a deleted SSH key is regenerated; a longer token length yields a new value](docs/assets/demo.gif)](https://asciinema.org/a/x5iEg5qgU8xqvcfN)
 
 Write a `GeneratedSecret` next to your application; the operator creates the

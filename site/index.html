@@ -99,6 +99,8 @@
         <button class="copy" type="button" hidden aria-label="Copy the install commands"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3v5.5A1.5 1.5 0 0 0 3.5 10H4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span class="copy-label">Copy</span></button>
         <span class="copy-status visually-hidden" aria-live="polite"></span>
       </div>
+<!-- Indentation inside this <pre> is significant: the YAML heredoc below depends on it,
+     and the copy button copies the text verbatim (textContent). Do not re-indent. -->
 <pre tabindex="0"><code><span class="cmd">kind</span> create cluster --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d
 <span class="cmd">helm</span> repo add jabbas https://jabbas.github.io/helm-charts
 <span class="cmd">helm</span> repo update jabbas
@@ -169,19 +171,19 @@ EOF
       <li><a href="https://www.vaultproject.io">HashiCorp Vault</a>, <a href="https://openbao.org">OpenBao</a>: a full secrets platform; heavy if you need only a few generated passwords.</li>
       <li>Helm <code>randAlphaNum</code> + <code>lookup</code>: the value is regenerated under <code>helm template</code> and Argo CD.</li>
     </ul>
-    <p class="note">Generated values are ordinary Secrets: readable with <code>get secrets</code>, and unencrypted in etcd unless encryption at rest is enabled (see <a href="https://github.com/jabbas/generated-secrets-operator/blob/main/docs/security.md">Security</a>).</p>
+    <p class="note">Generated values are ordinary Secrets: readable with <code>get secrets</code>, and unencrypted in etcd unless encryption at rest is enabled (see <a href="https://github.com/jabbas/generated-secrets-operator/blob/main/docs/security.md">Security</a>). They come from the operating system's cryptographically secure random number generator.</p>
     <p><a class="more" href="https://github.com/jabbas/generated-secrets-operator#when-to-use-it-and-when-not">Full comparison in the README →</a></p>
   </section>
 
   <section class="section" id="trust" aria-labelledby="trust-title">
     <h2 id="trust-title">Built to be trusted</h2>
     <ul class="checks" role="list">
-      <li>Apache-2.0</li>
-      <li>cosign-signed multi-architecture images with an SBOM (software bill of materials)</li>
-      <li><code>FROM scratch</code> image</li>
-      <li>Least-privilege RBAC (role-based access control); values never in logs, Events, status or metrics</li>
-      <li>Every release is promoted from a release candidate that passed a test on a real cluster</li>
-      <li>Written in Rust</li>
+      <li><span class="tick" aria-hidden="true"></span>Apache-2.0</li>
+      <li><span class="tick" aria-hidden="true"></span>cosign-signed multi-architecture images with an SBOM (software bill of materials)</li>
+      <li><span class="tick" aria-hidden="true"></span><code>FROM scratch</code> image</li>
+      <li><span class="tick" aria-hidden="true"></span>Least-privilege RBAC (role-based access control); values never in logs, Events, status or metrics</li>
+      <li><span class="tick" aria-hidden="true"></span>Every release is promoted from a release candidate that passed a test on a real cluster</li>
+      <li><span class="tick" aria-hidden="true"></span>Written in Rust</li>
     </ul>
   </section>
 
@@ -208,18 +210,24 @@ EOF
     var status = block.querySelector('.copy-status');
     var code = block.querySelector('pre');
     if (!button || !navigator.clipboard) { return; }
+    var resetTimer;
     button.hidden = false;
     button.addEventListener('click', function () {
       function announce(text) {
         label.textContent = text;
         status.textContent = text;
       }
+      function armReset() {
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(function () { label.textContent = 'Copy'; status.textContent = ''; }, 1500);
+      }
       navigator.clipboard.writeText(code.textContent).then(function () {
         announce('Copied');
+        armReset();
       }, function () {
         announce('Copy failed');
+        armReset();
       });
-      setTimeout(function () { label.textContent = 'Copy'; status.textContent = ''; }, 1500);
     });
   });
 

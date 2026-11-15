@@ -116,6 +116,9 @@ cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_
   --certificate-oidc-issuer "${ISSUER}"
 ```
 
+(`crane manifest "ghcr.io/jabbas/generated-secrets-operator:${TAG}"` prints the same
+index if you do not have Docker.)
+
 A failed verification prints an error and exits non-zero; do not install. The
 output of a successful `cosign verify` contains the digest of the multi-arch
 image (`critical.image.docker-manifest-digest`), which you can pin with

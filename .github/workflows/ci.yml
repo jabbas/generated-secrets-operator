@@ -2,7 +2,21 @@
 name: CI
 
 on:
+  # The path filter is on pull requests ONLY. The release gate (ADR 0004,
+  # .github/scripts/ci-status.sh) requires a successful run of this workflow
+  # with event=push on main for the tagged commit, so the `push` trigger below
+  # must stay unfiltered and every push to main runs all jobs.
+  # A pull request that touches only the paths below gets no CI run at all.
+  # They are the ones no job reads: the website (site/, published by
+  # pages.yml), the demo recording scripts (demo/) and the recordings in
+  # docs/assets/. Do not add a path that a job reads: the actionlint job lints
+  # every workflow (so pages.yml and artifacthub-metadata.yml are not ignored),
+  # and the chart, examples, crates and xtask are built and tested.
   pull_request:
+    paths-ignore:
+      - site/**
+      - demo/**
+      - docs/assets/**
   push:
     branches: [main]
 
@@ -118,8 +132,25 @@ jobs:
       - run: bash .github/scripts/release-graph-check-test.sh
       - run: bash .github/scripts/release-graph-check.sh
 
+  # Lints every workflow with actionlint (which runs shellcheck on the `run:`
+  # blocks; shellcheck is part of the runner image). actionlint is pinned with
+  # a SHA-256 in .github/scripts/install-release-tools.sh, like the release
+  # tools. Without `-shellcheck=` it keeps the runner's shellcheck.
+  actionlint:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned actionlint
+        run: bash .github/scripts/install-release-tools.sh actionlint
+      - name: Lint the workflows
+        run: actionlint -color
+
   # release.yml downloads syft, grype and crane (and artifacthub-metadata.yml
-  # oras) against SHA-256 values pinned in
+  # oras, ci.yml actionlint) against SHA-256 values pinned in
   # .github/scripts/install-release-tools.sh, but release.yml runs only on
   # tags. This job runs that same script (the one place for those pins, `all`
   # = every tool in it) on every pull request, so a version bump without its
@@ -146,6 +177,7 @@ jobs:
           grype --version
           crane version
           oras version
+          actionlint -version
 
   # Applies the generated CRD to a real API server and checks the fixtures
   # against its validation (CEL, schema, defaulting). Node images are those

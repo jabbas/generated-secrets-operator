@@ -339,15 +339,21 @@ of either form.
 
 ### Bump the versions
 
-Three places carry the release version and must be equal; `cargo xtask
-chart-test` (test `chart_version_matches_workspace`) and the workflow's `verify`
-job fail otherwise (items 1-3; item 4 is documentation, checked by nothing):
+Four places carry the release version and must be equal; `cargo xtask
+chart-test` fails otherwise (items 1-3: test `chart_version_matches_workspace`,
+also checked by the workflow's `verify` job; item 4: test
+`chart_artifact_hub_image_matches_app_version`). Item 5 is documentation,
+checked by nothing:
 
 1. `version` in `[workspace.package]` of `Cargo.toml` (then `cargo build` so
    `Cargo.lock` follows);
 2. `version` in `charts/generated-secrets-operator/Chart.yaml`;
 3. `appVersion` in `charts/generated-secrets-operator/Chart.yaml` (a quoted string);
-4. the documentation that names the latest published release: the `TAG` and
+4. the image tag in the `artifacthub.io/images` annotation of
+   `charts/generated-secrets-operator/Chart.yaml`
+   (`ghcr.io/jabbas/generated-secrets-operator:<version>`), the image Artifact
+   Hub scans;
+5. the documentation that names the latest published release: the `TAG` and
    `CHART_VERSION` of the verify blocks in `docs/installation.md` and
    `docs/security.md`, and the `--version` of the install examples in
    `README.md`, `docs/installation.md` and the two install examples in
@@ -367,7 +373,9 @@ are the *final* version (`0.1.2`); the tag `0.1.2-rc.1` is checked against it
 (the part before `-rc.N` must equal the workspace version), and the workflow
 injects the rc version only while packaging the chart
 (`helm package --version 0.1.2-rc.1 --app-version 0.1.2-rc.1`), so the packaged
-chart installs the image `…:0.1.2-rc.1`.
+chart installs the image `…:0.1.2-rc.1`. The `artifacthub.io/images` annotation
+of a candidate's chart still names `…:0.1.2`; this is harmless because Artifact
+Hub does not list candidates (see [Artifact Hub metadata](#artifact-hub-metadata)).
 
 ### Tag
 
@@ -672,6 +680,32 @@ without logging in; `helm-index` reads the chart manifest anonymously too) and
 that a pre-release is marked as such. For the HTTP channel, run the digest-chain
 recipe in [Installation](installation.md#what-is-and-is-not-verified) for the new
 version.
+
+### Artifact Hub metadata
+
+The chart is listed on [Artifact Hub](https://artifacthub.io) from the OCI
+repository only (design:
+[Artifact Hub listing](design/2026-11-15-artifact-hub-listing-design.md)). The
+package page comes from the `artifacthub.io/*` annotations in `Chart.yaml`,
+which ship with each chart version. The repository settings live in
+`.github/artifacthub-repo.yml`: its `ignore` rule hides release candidates
+(`-rc\.`), and `repositoryID` is added once the owner has registered the
+repository on Artifact Hub. Artifact Hub reads that file from the special tag
+`artifacthub.io` of the chart's OCI repository; it is not part of the chart
+and the release workflow does not publish it. Push it by hand, with a token
+that may write packages (`oras login ghcr.io` first), once after the
+registration and again only when the file changes:
+
+```sh
+oras push ghcr.io/jabbas/charts/generated-secrets-operator:artifacthub.io \
+  --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+  .github/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+```
+
+The tag `artifacthub.io` is not semver, so neither Artifact Hub's version list
+nor the release workflow treats it as a chart version: the workflow only looks
+up exact versions (`registry-lookup.sh`, `helm pull --version <semver>`), and
+the cosign `sha256-<digest>.sig` tags already live in the same repository.
 
 ### One-time setup and maintenance
 

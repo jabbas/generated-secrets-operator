@@ -339,10 +339,11 @@ of either form.
 
 ### Bump the versions
 
-Four places carry the release version and must be equal; `cargo xtask
-chart-test` fails otherwise (items 1-3: test `chart_version_matches_workspace`,
-also checked by the workflow's `verify` job; item 4: test
-`chart_artifact_hub_image_matches_app_version`). Item 5 is documentation,
+Four places carry the release version and must be equal. CI enforces all four
+through `cargo xtask chart-test` (the `chart` job), which fails otherwise:
+items 1-3 with test `chart_version_matches_workspace` (also checked by the
+release workflow's `verify` job), item 4 with test
+`chart_artifact_hub_image_matches_deployed_image`. Item 5 is documentation,
 checked by nothing:
 
 1. `version` in `[workspace.package]` of `Cargo.toml` (then `cargo build` so
@@ -352,7 +353,7 @@ checked by nothing:
 4. the image tag in the `artifacthub.io/images` annotation of
    `charts/generated-secrets-operator/Chart.yaml`
    (`ghcr.io/jabbas/generated-secrets-operator:<version>`), the image Artifact
-   Hub scans;
+   Hub scans; it must equal the image the chart deploys by default;
 5. the documentation that names the latest published release: the `TAG` and
    `CHART_VERSION` of the verify blocks in `docs/installation.md` and
    `docs/security.md`, and the `--version` of the install examples in
@@ -687,14 +688,29 @@ The chart is listed on [Artifact Hub](https://artifacthub.io) from the OCI
 repository only (design:
 [Artifact Hub listing](design/2026-11-15-artifact-hub-listing-design.md)). The
 package page comes from the `artifacthub.io/*` annotations in `Chart.yaml`,
-which ship with each chart version. The repository settings live in
-`.github/artifacthub-repo.yml`: its `ignore` rule hides release candidates
-(`-rc\.`), and `repositoryID` is added once the owner has registered the
-repository on Artifact Hub. Artifact Hub reads that file from the special tag
-`artifacthub.io` of the chart's OCI repository; it is not part of the chart
-and the release workflow does not publish it. Push it by hand, with a token
+which ship with each chart version; `cargo xtask chart-test` checks that they
+parse, that the image equals the one the chart deploys and that
+`crdsExamples` equals `examples/app-admin-password.yaml`. The repository
+settings live in `.github/artifacthub-repo.yml`: its `ignore` rule hides
+release candidates (`-rc\.`), and `repositoryID` is added once the owner has
+registered the repository on Artifact Hub.
+
+Registration (owner, once, with the owner's Artifact Hub login):
+
+1. On [artifacthub.io](https://artifacthub.io): Control Panel → Repositories →
+   Add, kind **Helm charts**, name `generated-secrets-operator` (it cannot be
+   renamed later), URL `oci://ghcr.io/jabbas/charts/generated-secrets-operator`.
+2. Copy the repository ID shown on the repository card into `repositoryID` in
+   `.github/artifacthub-repo.yml`, merge that to `main`, then push the file
+   as below.
+
+Artifact Hub reads that file from the special tag `artifacthub.io` of the
+chart's OCI repository; it is not part of the chart and the release workflow
+does not publish it. Push it by hand from the repository root, with a token
 that may write packages (`oras login ghcr.io` first), once after the
-registration and again only when the file changes:
+registration and again only when the file changes. [oras](https://oras.land)
+is needed only for this manual one-off, not for building, testing or
+releasing:
 
 ```sh
 oras push ghcr.io/jabbas/charts/generated-secrets-operator:artifacthub.io \
@@ -713,6 +729,8 @@ the cosign `sha256-<digest>.sig` tags already live in the same repository.
   container package and the `charts/generated-secrets-operator` package on ghcr.io must
   be public and linked to this repository (package settings). Without that,
   users cannot pull or verify them anonymously.
+- **Artifact Hub.** Registering the OCI chart repository and pushing
+  `.github/artifacthub-repo.yml`: see [Artifact Hub metadata](#artifact-hub-metadata).
 - **`HELM_CHARTS_TOKEN` (Environment `helm-charts`).** The only credential that
   can write to `jabbas/helm-charts`. Create a **fine-grained personal access
   token**: resource owner `jabbas`, repository access **only**

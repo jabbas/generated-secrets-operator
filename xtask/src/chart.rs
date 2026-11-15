@@ -33,6 +33,17 @@ const DIGEST: &str = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef012
 /// Registry override for the mirror renders.
 const MIRROR: &str = "mirror.example.com";
 
+/// Example manifest copied into the `artifacthub.io/crdsExamples` annotation,
+/// relative to the workspace root.
+const ARTIFACT_HUB_EXAMPLE: &str = "examples/app-admin-password.yaml";
+/// Artifact Hub annotations whose value is a YAML document in a string.
+const ARTIFACT_HUB_YAML_ANNOTATIONS: &[&str] = &[
+    "artifacthub.io/crds",
+    "artifacthub.io/crdsExamples",
+    "artifacthub.io/images",
+    "artifacthub.io/links",
+];
+
 /// Value set: namespace mode watching `a` and `b`.
 const NAMESPACE_MODE: &[&str] = &["watchNamespaces={a,b}"];
 
@@ -257,6 +268,8 @@ impl Helm {
 struct Ctx {
     root: PathBuf,
     helm: Helm,
+    /// The parsed `Chart.yaml`.
+    chart_metadata: Value,
     app_version: String,
     default: Rendered,
     namespace_mode: Rendered,
@@ -288,6 +301,7 @@ impl Ctx {
             crds_off: helm.render(&["crds.install=false"])?,
             root,
             helm,
+            chart_metadata: chart,
             app_version,
         })
     }
@@ -1118,8 +1132,34 @@ fn chart_version_matches_workspace(ctx: &Ctx) -> Result<(), String> {
     ensure_eq("Chart appVersion", &ctx.app_version.as_str(), &workspace)
 }
 
-/// The operator image without a tag, as Artifact Hub must scan it.
-const OPERATOR_IMAGE: &str = "ghcr.io/jabbas/generated-secrets-operator";
+/// The YAML document held, as a string, by the annotation `key` of `chart`
+/// (the parsed `Chart.yaml`).
+fn annotation_yaml(chart: &Value, key: &str) -> Result<Value, String> {
+    let annotation = chart
+        .get("annotations")
+        .and_then(|annotations| annotations.get(key))
+        .ok_or_else(|| format!("{CHART_DIR}/Chart.yaml has no annotation {key}"))?;
+    let text = annotation.as_str().ok_or_else(|| {
+        format!(
+            "annotation {key} in {CHART_DIR}/Chart.yaml is not a string; \
+             write its YAML as a block scalar (`{key}: |`)"
+        )
+    })?;
+    serde_norway::from_str(text).map_err(|e| {
+        format!(
+            "annotation {key} in {CHART_DIR}/Chart.yaml is not valid YAML \
+             (positions count from the start of the annotation); fix it: {e}"
+        )
+    })
+}
+
+/// Checks that every YAML-in-string Artifact Hub annotation of `chart` parses.
+fn ensure_artifact_hub_annotations_parse(chart: &Value) -> Result<(), String> {
+    for key in ARTIFACT_HUB_YAML_ANNOTATIONS {
+        annotation_yaml(chart, key)?;
+    }
+    Ok(())
+}
 
 /// One entry of the `artifacthub.io/images` annotation (other fields, such as
 /// `name` and `platforms`, are not checked).
@@ -1128,35 +1168,58 @@ struct ArtifactHubImage {
     image: String,
 }
 
-/// Checks that the `artifacthub.io/images` annotation of `chart` (the parsed
-/// `Chart.yaml`) lists exactly the operator image, tagged with `app_version`.
-fn ensure_artifact_hub_image(chart: &Value, app_version: &str) -> Result<(), String> {
-    let annotation = str_at(chart, &["annotations", "artifacthub.io/images"])
-        .ok_or("Chart.yaml has no artifacthub.io/images annotation")?;
-    let images: Vec<ArtifactHubImage> = serde_norway::from_str(annotation)
-        .map_err(|e| format!("cannot parse the artifacthub.io/images annotation: {e}"))?;
+/// Checks that the `artifacthub.io/images` annotation of `chart` lists
+/// exactly one image, `deployed_image` (the image the chart deploys).
+fn ensure_artifact_hub_image(chart: &Value, deployed_image: &str) -> Result<(), String> {
+    let key = "artifacthub.io/images";
+    let images: Vec<ArtifactHubImage> = serde_norway::from_value(annotation_yaml(chart, key)?)
+        .map_err(|e| format!("annotation {key} in {CHART_DIR}/Chart.yaml: {e}"))?;
     let [listed] = images.as_slice() else {
         return Err(format!(
-            "artifacthub.io/images must list exactly one image, found {}",
+            "annotation {key} in {CHART_DIR}/Chart.yaml must list exactly one image, found {}",
             images.len()
         ));
     };
-    let expected_image = format!("{OPERATOR_IMAGE}:{app_version}");
-    ensure(listed.image == expected_image, || {
+    ensure(listed.image == deployed_image, || {
         format!(
-            "artifacthub.io/images in {CHART_DIR}/Chart.yaml lists {}, expected {expected_image} \
-             (the appVersion); bump the annotation together with version and appVersion \
+            "annotation {key} in {CHART_DIR}/Chart.yaml lists {}, but the chart deploys \
+             {deployed_image}; bump the annotation together with version and appVersion \
              (docs/development.md, \"Bump the versions\")",
             listed.image
         )
     })
 }
 
-fn chart_artifact_hub_image_matches_app_version(ctx: &Ctx) -> Result<(), String> {
-    let chart_yaml =
-        fs::read_to_string(ctx.helm.chart.join("Chart.yaml")).map_err(|e| e.to_string())?;
-    let chart: Value = serde_norway::from_str(&chart_yaml).map_err(|e| e.to_string())?;
-    ensure_artifact_hub_image(&chart, &ctx.app_version)
+/// Checks that the `artifacthub.io/crdsExamples` annotation of `chart` holds
+/// exactly the manifest of the example file (`example_yaml`), as YAML data.
+fn ensure_artifact_hub_example(chart: &Value, example_yaml: &str) -> Result<(), String> {
+    let key = "artifacthub.io/crdsExamples";
+    let annotation = annotation_yaml(chart, key)?;
+    let example_documents = parse_documents(example_yaml)
+        .map_err(|e| format!("cannot parse {ARTIFACT_HUB_EXAMPLE}: {e}"))?;
+    let expected = Value::Sequence(example_documents);
+    match first_difference(&annotation, &expected, "crdsExamples") {
+        None => Ok(()),
+        Some(difference) => Err(format!(
+            "{key} in {CHART_DIR}/Chart.yaml differs from {ARTIFACT_HUB_EXAMPLE}; \
+             copy the manifest of the example into the annotation:\n{difference}"
+        )),
+    }
+}
+
+fn chart_artifact_hub_annotations_parse(ctx: &Ctx) -> Result<(), String> {
+    ensure_artifact_hub_annotations_parse(&ctx.chart_metadata)
+}
+
+fn chart_artifact_hub_image_matches_deployed_image(ctx: &Ctx) -> Result<(), String> {
+    // `chart_image_reference` pins the default image to the appVersion.
+    ensure_artifact_hub_image(&ctx.chart_metadata, &single_image(&ctx.default)?)
+}
+
+fn chart_artifact_hub_example_matches_file(ctx: &Ctx) -> Result<(), String> {
+    let example_yaml = fs::read_to_string(ctx.root.join(ARTIFACT_HUB_EXAMPLE))
+        .map_err(|e| format!("cannot read {ARTIFACT_HUB_EXAMPLE}: {e}"))?;
+    ensure_artifact_hub_example(&ctx.chart_metadata, &example_yaml)
 }
 
 /// `resyncInterval` accepted by the schema exactly when the operator accepts
@@ -1228,8 +1291,16 @@ const CHECKS: &[(&str, Check)] = &[
         chart_version_matches_workspace,
     ),
     (
-        "chart_artifact_hub_image_matches_app_version",
-        chart_artifact_hub_image_matches_app_version,
+        "chart_artifact_hub_annotations_parse",
+        chart_artifact_hub_annotations_parse,
+    ),
+    (
+        "chart_artifact_hub_image_matches_deployed_image",
+        chart_artifact_hub_image_matches_deployed_image,
+    ),
+    (
+        "chart_artifact_hub_example_matches_file",
+        chart_artifact_hub_example_matches_file,
     ),
 ];
 
@@ -1326,64 +1397,180 @@ mod tests {
         assert_eq!(verbs.len(), 7);
     }
 
-    fn chart_with_images_annotation(images_annotation: &str) -> Value {
-        let mut annotations = serde_norway::Mapping::new();
-        annotations.insert(
-            Value::from("artifacthub.io/images"),
-            Value::from(images_annotation),
-        );
+    const DEPLOYED_IMAGE: &str = "ghcr.io/jabbas/generated-secrets-operator:1.2.3";
+
+    /// The example manifest as the example file holds it (with comments).
+    const EXAMPLE_FILE: &str = "# An example.\n\
+        apiVersion: generatedsecrets.jabbas.eu/v1alpha1\n\
+        kind: GeneratedSecret\n\
+        metadata:\n  name: app-admin\n\
+        spec:\n  deletionPolicy: Retain\n  fields:\n    # The default.\n    - name: password\n";
+
+    /// The same manifest as the `crdsExamples` annotation lists it.
+    const EXAMPLE_ANNOTATION: &str = "- apiVersion: generatedsecrets.jabbas.eu/v1alpha1\n  \
+        kind: GeneratedSecret\n  \
+        metadata:\n    name: app-admin\n  \
+        spec:\n    deletionPolicy: Retain\n    fields:\n      - name: password\n";
+
+    /// A parsed `Chart.yaml` with `annotations` as given.
+    fn chart_with_annotations(annotations: &[(&str, Value)]) -> Value {
+        let mut annotation_map = serde_norway::Mapping::new();
+        for (key, value) in annotations {
+            annotation_map.insert(Value::from(*key), value.clone());
+        }
         let mut chart = serde_norway::Mapping::new();
-        chart.insert(Value::from("annotations"), Value::Mapping(annotations));
+        chart.insert(Value::from("annotations"), Value::Mapping(annotation_map));
         Value::Mapping(chart)
     }
 
+    fn chart_with_annotation(key: &str, text: &str) -> Value {
+        chart_with_annotations(&[(key, Value::from(text))])
+    }
+
+    /// Every YAML-in-string Artifact Hub annotation, each valid.
+    fn valid_artifact_hub_annotations() -> Vec<(&'static str, Value)> {
+        vec![
+            (
+                "artifacthub.io/crds",
+                Value::from("- kind: GeneratedSecret\n  version: v1alpha1\n"),
+            ),
+            (
+                "artifacthub.io/crdsExamples",
+                Value::from(EXAMPLE_ANNOTATION),
+            ),
+            (
+                "artifacthub.io/images",
+                Value::from(format!("- image: {DEPLOYED_IMAGE}\n")),
+            ),
+            (
+                "artifacthub.io/links",
+                Value::from("- name: source\n  url: https://example.com\n"),
+            ),
+        ]
+    }
+
     #[test]
-    fn artifact_hub_image_accepts_operator_image_at_app_version() {
-        let chart = chart_with_images_annotation(
+    fn annotation_yaml_reports_missing_annotation() {
+        let chart = chart_with_annotations(&[]);
+        let message = annotation_yaml(&chart, "artifacthub.io/images").expect_err("missing");
+        assert_eq!(
+            message,
+            format!("{CHART_DIR}/Chart.yaml has no annotation artifacthub.io/images")
+        );
+    }
+
+    #[test]
+    fn annotation_yaml_reports_annotation_that_is_not_a_string() {
+        let not_a_string = Value::Sequence(vec![Value::from("linux/amd64")]);
+        let chart = chart_with_annotations(&[("artifacthub.io/images", not_a_string)]);
+        let message = annotation_yaml(&chart, "artifacthub.io/images").expect_err("not a string");
+        assert!(
+            message.contains(&format!(
+                "annotation artifacthub.io/images in {CHART_DIR}/Chart.yaml is not a string"
+            )),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn annotation_yaml_reports_malformed_yaml() {
+        let chart = chart_with_annotation("artifacthub.io/links", "- name: [unclosed\n");
+        let message = annotation_yaml(&chart, "artifacthub.io/links").expect_err("malformed");
+        assert!(
+            message.contains(&format!(
+                "annotation artifacthub.io/links in {CHART_DIR}/Chart.yaml is not valid YAML"
+            )),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn annotations_parse_accepts_valid_annotations() {
+        let chart = chart_with_annotations(&valid_artifact_hub_annotations());
+        assert_eq!(ensure_artifact_hub_annotations_parse(&chart), Ok(()));
+    }
+
+    #[test]
+    fn annotations_parse_rejects_one_malformed_annotation() {
+        let mut annotations = valid_artifact_hub_annotations();
+        annotations.retain(|(key, _)| *key != "artifacthub.io/crds");
+        annotations.push(("artifacthub.io/crds", Value::from("- kind: [unclosed\n")));
+        let chart = chart_with_annotations(&annotations);
+        let message = ensure_artifact_hub_annotations_parse(&chart).expect_err("malformed crds");
+        assert!(message.contains("artifacthub.io/crds"), "{message}");
+    }
+
+    #[test]
+    fn artifact_hub_image_accepts_the_deployed_image() {
+        let chart = chart_with_annotation(
+            "artifacthub.io/images",
             "- name: generated-secrets-operator\n  \
              image: ghcr.io/jabbas/generated-secrets-operator:1.2.3\n  \
              platforms:\n    - linux/amd64\n    - linux/arm64\n",
         );
-        assert_eq!(ensure_artifact_hub_image(&chart, "1.2.3"), Ok(()));
+        assert_eq!(ensure_artifact_hub_image(&chart, DEPLOYED_IMAGE), Ok(()));
     }
 
     #[test]
     fn artifact_hub_image_rejects_tag_that_was_not_bumped() {
-        let chart = chart_with_images_annotation(
-            "- name: generated-secrets-operator\n  \
-             image: ghcr.io/jabbas/generated-secrets-operator:1.2.2\n",
+        let chart = chart_with_annotation(
+            "artifacthub.io/images",
+            "- image: ghcr.io/jabbas/generated-secrets-operator:1.2.2\n",
         );
-        let message = ensure_artifact_hub_image(&chart, "1.2.3").expect_err("stale tag");
-        assert!(message.contains("ghcr.io/jabbas/generated-secrets-operator:1.2.3"));
-        assert!(message.contains("ghcr.io/jabbas/generated-secrets-operator:1.2.2"));
-        assert!(message.contains("Bump the versions"), "{message}");
+        let message = ensure_artifact_hub_image(&chart, DEPLOYED_IMAGE).expect_err("stale tag");
+        assert!(
+            message.contains(&format!(
+                "lists ghcr.io/jabbas/generated-secrets-operator:1.2.2, \
+                 but the chart deploys {DEPLOYED_IMAGE}"
+            )),
+            "{message}"
+        );
+        assert!(message.contains("\"Bump the versions\""), "{message}");
     }
 
     #[test]
-    fn artifact_hub_image_rejects_another_image() {
-        let chart = chart_with_images_annotation(
-            "- name: generated-secrets-operator\n  \
-             image: ghcr.io/example/generated-secrets-operator:1.2.3\n",
-        );
-        assert!(ensure_artifact_hub_image(&chart, "1.2.3").is_err());
-    }
-
-    #[test]
-    fn artifact_hub_image_requires_exactly_one_image() {
-        let two_images = chart_with_images_annotation(
+    fn artifact_hub_image_rejects_two_images() {
+        let chart = chart_with_annotation(
+            "artifacthub.io/images",
             "- image: ghcr.io/jabbas/generated-secrets-operator:1.2.3\n\
              - image: ghcr.io/jabbas/generated-secrets-operator:1.2.3\n",
         );
-        assert!(ensure_artifact_hub_image(&two_images, "1.2.3").is_err());
-        let no_image = chart_with_images_annotation("[]\n");
-        assert!(ensure_artifact_hub_image(&no_image, "1.2.3").is_err());
+        let message = ensure_artifact_hub_image(&chart, DEPLOYED_IMAGE).expect_err("two images");
+        assert!(message.contains("exactly one image, found 2"), "{message}");
     }
 
     #[test]
-    fn artifact_hub_image_rejects_missing_or_malformed_annotation() {
-        let no_annotation = Value::Mapping(serde_norway::Mapping::new());
-        assert!(ensure_artifact_hub_image(&no_annotation, "1.2.3").is_err());
-        let malformed = chart_with_images_annotation("- image: [unclosed\n");
-        assert!(ensure_artifact_hub_image(&malformed, "1.2.3").is_err());
+    fn artifact_hub_image_rejects_empty_list() {
+        let chart = chart_with_annotation("artifacthub.io/images", "[]\n");
+        let message = ensure_artifact_hub_image(&chart, DEPLOYED_IMAGE).expect_err("no image");
+        assert!(message.contains("exactly one image, found 0"), "{message}");
+    }
+
+    #[test]
+    fn artifact_hub_example_accepts_the_example_file() {
+        let chart = chart_with_annotation("artifacthub.io/crdsExamples", EXAMPLE_ANNOTATION);
+        assert_eq!(ensure_artifact_hub_example(&chart, EXAMPLE_FILE), Ok(()));
+    }
+
+    #[test]
+    fn artifact_hub_example_rejects_drift_from_the_example_file() {
+        let drifted = EXAMPLE_ANNOTATION.replace("Retain", "Delete");
+        let chart = chart_with_annotation("artifacthub.io/crdsExamples", &drifted);
+        let message = ensure_artifact_hub_example(&chart, EXAMPLE_FILE).expect_err("drift");
+        assert!(
+            message.contains(&format!(
+                "artifacthub.io/crdsExamples in {CHART_DIR}/Chart.yaml differs from \
+                 {ARTIFACT_HUB_EXAMPLE}"
+            )),
+            "{message}"
+        );
+        assert!(message.contains("spec.deletionPolicy"), "{message}");
+    }
+
+    #[test]
+    fn artifact_hub_example_rejects_malformed_annotation() {
+        let chart = chart_with_annotation("artifacthub.io/crdsExamples", "- kind: [unclosed\n");
+        let message = ensure_artifact_hub_example(&chart, EXAMPLE_FILE).expect_err("malformed");
+        assert!(message.contains("is not valid YAML"), "{message}");
     }
 }

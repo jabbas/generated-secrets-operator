@@ -27,7 +27,8 @@ annotations:
       name: generatedsecrets.generatedsecrets.jabbas.eu
       displayName: Generated Secret
       description: Declares a Secret whose values (passwords, tokens, random bytes, SSH key pairs or basic-auth credentials) the operator generates once and keeps stable.
-  # Copy of examples/app-admin-password.yaml (without its comments); keep the two in sync.
+  # Copy of examples/app-admin-password.yaml (without its comments); keep the two
+  # in sync. `cargo xtask chart-test` checks it.
   artifacthub.io/crdsExamples: |
     - apiVersion: generatedsecrets.jabbas.eu/v1alpha1
       kind: GeneratedSecret

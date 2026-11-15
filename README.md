@@ -9,8 +9,8 @@ Declared next to your app; the values are never stored in Git.**
 
 [![Terminal recording: a password survives deleting the GeneratedSecret and restarting the operator; a deleted SSH key is regenerated; a longer token length yields a new value](docs/assets/demo.gif)](https://asciinema.org/a/x5iEg5qgU8xqvcfN)
 
-You write a small `GeneratedSecret` next to your application. The operator
-creates the `Secret` with the values, once, and then leaves them alone:
+Write a `GeneratedSecret` next to your application; the operator creates the
+`Secret` once and then leaves its values alone:
 
 ```yaml
 apiVersion: generatedsecrets.jabbas.eu/v1alpha1
@@ -37,9 +37,8 @@ or when you re-apply the same manifest.
 
 ## Try it in 5 minutes
 
-You need `kind`, Helm 4 and `kubectl`, and a cluster running Kubernetes 1.34 or
-newer (the `kind` image below is the one this project tests with). No clone of
-this repository is needed.
+You need `kind`, Helm 4 and `kubectl`; no clone is needed. The `kind` image
+below runs Kubernetes 1.34, the oldest supported version.
 
 ```sh
 kind create cluster --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d
@@ -86,7 +85,7 @@ keys, SSH key pairs, basic-auth credentials. Other tools fit other jobs:
 | Tool | Notes |
 |---|---|
 | [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [SOPS](https://github.com/getsops/sops) | Encrypt values a human already has, to commit them to Git. Right for externally issued secrets; for machine-invented ones they add key management for no benefit. |
-| [External Secrets Operator](https://external-secrets.io) | Syncs secrets from an external store (for example AWS Secrets Manager); right when that store is the source of truth. Its [generators](https://external-secrets.io/latest/guides/generator/) say "Every invocation produces a new set of values"; stable values need [three settings per object](https://external-secrets.io/latest/api/externalsecret/) (`refreshPolicy: CreatedOnce`, `target.immutable: true`, `creationPolicy: Orphan`), and it runs [three components](https://external-secrets.io/latest/api/components/) (controller, webhook, certificate controller). Here stable values are the default, and `deletionPolicy: Retain` lets a re-created `GeneratedSecret` adopt its Secret. |
+| [External Secrets Operator](https://external-secrets.io) | Syncs secrets from an external store (for example AWS Secrets Manager); right when that store is the source of truth. Its [generators](https://external-secrets.io/latest/guides/generator/) say "Every invocation produces a new set of values"; stable values need [three settings per object](https://external-secrets.io/latest/api/externalsecret/) (`refreshPolicy: CreatedOnce`, `target.immutable: true`, `creationPolicy: Orphan`), and by default it runs [three components](https://external-secrets.io/latest/api/components/) (controller, webhook, certificate controller). Here stable values are the default, and `deletionPolicy: Retain` lets a re-created `GeneratedSecret` adopt its Secret. |
 | [HashiCorp Vault](https://www.vaultproject.io), [OpenBao](https://openbao.org) | A full secrets platform; heavy if you need only a few generated passwords. |
 | Helm `randAlphaNum` + `lookup` | [`lookup` returns nothing during `helm template` and client dry-run](https://helm.sh/docs/chart_template_guide/functions_and_pipelines/), and [Argo CD does not support it](https://github.com/argoproj/argo-cd/issues/5202), so the value is regenerated. |
 | [mittwald/kubernetes-secret-generator](https://github.com/mittwald/kubernetes-secret-generator) | The best-known earlier generator: annotation-driven, on plain Secrets. Latest release v3.4.1 (August 2025); the one before is from April 2022. |
@@ -96,11 +95,10 @@ keys, SSH key pairs, basic-auth credentials. Other tools fit other jobs:
 
 - The secret is issued by someone else (a vendor API key, another team's
   password).
-- The value must be known before deployment, or must be identical across
-  clusters.
+- The value must be known before deployment, or be identical across clusters.
 - The values must survive losing the cluster. They live only in the cluster
-  (in etcd, the Kubernetes data store), so back up the Secrets, for example
-  with [Velero](https://velero.io).
+  (in etcd, the Kubernetes data store); back up the Secrets, for example with
+  [Velero](https://velero.io).
 
 Generated values are ordinary Secrets: readable with `get secrets`, and
 unencrypted in etcd unless encryption at rest is enabled (see
@@ -117,10 +115,10 @@ cryptographically secure random number generator.
 - **Per-key control.** Length, character set, excluded characters, minimum
   counts per character class, prefix and suffix; or N random bytes in hex,
   base64, base64url or base32.
-- **Optional scheduled rotation** (`rotation.interval`), and manual rotation by
+- **Optional scheduled rotation** (`rotation.interval`); manual rotation by
   deleting the Secret.
 - **`deletionPolicy`:** `Delete` (default, garbage-collected with the
-  `GeneratedSecret`) or `Retain` (the Secret survives, and a re-created
+  `GeneratedSecret`) or `Retain` (the Secret survives; a re-created
   `GeneratedSecret` adopts it and keeps its values).
 - **Mistakes surface where you look.** A bad manifest is rejected at
   `kubectl apply` / `helm install` time by the CRD (custom resource definition)
@@ -131,8 +129,8 @@ cryptographically secure random number generator.
   operator never touches a Secret it did not create. Cluster-wide or
   per-namespace RBAC (role-based access control; a real boundary).
 - **Production packaging.** Multi-arch image (`linux/amd64`, `linux/arm64`),
-  Helm chart (also as an OCI, Open Container Initiative, artifact), leader
-  election for a highly available deployment, Prometheus metrics, Pod Security
+  Helm chart (also published as an OCI (Open Container Initiative) artifact),
+  leader election for high availability, Prometheus metrics, Pod Security
   `restricted`; signed releases, see [Status](#status).
 
 ## Status
@@ -140,10 +138,11 @@ cryptographically secure random number generator.
 The API is `generatedsecrets.jabbas.eu/v1alpha1`. Defaults and the fingerprint
 format are frozen for this version, so upgrades never rotate your credentials.
 Breaking changes before `v1beta1` are possible but are always called out in the
-[changelog](CHANGELOG.md). Releases are cosign-signed, multi-architecture and
-carry an SBOM (software bill of materials); every release candidate passes a
-[test on a real cluster](docs/releases/0.2.0-home-lab-test.md) before it is
-promoted. Supported Kubernetes: 1.34 and newer.
+[changelog](CHANGELOG.md). Releases are cosign-signed and carry an SBOM
+(software bill of materials). Every release is promoted from a release
+candidate that passed a test on a real cluster (0.2.0:
+[report](docs/releases/0.2.0-home-lab-test.md)). Supported Kubernetes: 1.34
+and newer.
 
 The project was renamed from SecretSpec Operator in 0.2.0, a breaking change;
 see [Moving from 0.1.x](CHANGELOG.md#moving-from-01x) and

@@ -21,6 +21,11 @@ readonly chart_reference="oci://ghcr.io/jabbas/charts/generated-secrets-operator
 readonly terminal_size="110x34"
 readonly idle_time_limit_seconds="2"
 readonly recording_title="Generated Secrets Operator demo"
+# GIF rendering: the first font that is installed wins. Monego Nerd Font Fix is
+# the recording machine's own font; Menlo and DejaVu Sans Mono are fallbacks for
+# macOS and Linux. The fonts are not part of the repository.
+readonly gif_font_family="Monego Nerd Font Fix,Menlo,DejaVu Sans Mono"
+readonly gif_font_size="16"
 
 usage() {
   echo "usage: bash demo/record.sh <chart-version>   (e.g. 0.2.0 or 0.2.0-rc.2)" >&2
@@ -38,7 +43,7 @@ if [[ ! "$chart_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
   exit 2
 fi
 
-for tool in kind helm kubectl asciinema agg; do
+for tool in kind helm kubectl kubecolor yq asciinema agg; do
   if ! command -v "$tool" > /dev/null; then
     echo "$tool not found on PATH" >&2
     exit 1
@@ -116,8 +121,9 @@ asciinema rec "$work_directory/demo.cast" \
 
 echo "Rendering the GIF"
 agg "$work_directory/demo.cast" "$work_directory/demo.gif" \
-  --theme github-dark \
-  --font-size 14 \
+  --theme dracula \
+  --font-family "$gif_font_family" \
+  --font-size "$gif_font_size" \
   --idle-time-limit "$idle_time_limit_seconds" \
   --fps-cap 10 \
   --quiet \

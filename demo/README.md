@@ -12,8 +12,17 @@ On `PATH`:
   comes from your environment; this repository's recordings use podman
   (`KIND_EXPERIMENTAL_PROVIDER=podman`). The script does not set it.
 - `helm` 4 and `kubectl` 1.31 or newer (the demo uses `kubectl wait --for=create`)
+- [`kubecolor`](https://github.com/kubecolor/kubecolor): the demo shows `kubectl`
+  output through it, like the common `alias kubectl=kubecolor`. `demo.sh` defines
+  a `kubectl` function that runs `kubecolor --force-colors`, so the typed
+  `kubectl ...` is exactly what runs and the output is coloured.
+- [`yq`](https://github.com/mikefarah/yq) v4 (mikefarah): shows the example
+  manifests with YAML colours (`yq --colors`).
 - [`asciinema`](https://docs.asciinema.org/) 3.x
-- [`agg`](https://github.com/asciinema/agg) (asciinema GIF generator)
+- [`agg`](https://github.com/asciinema/agg) (asciinema GIF generator). The GIF is
+  rendered with the first installed font of `Monego Nerd Font Fix`, `Menlo`,
+  `DejaVu Sans Mono` (see `gif_font_family` in `record.sh`), size 16, theme
+  `dracula` (a dark theme whose cyan is really cyan, so the YAML keys are cyan). Change them there for a different look.
 
 Network access to `ghcr.io` is needed to pull the published chart and image.
 
@@ -47,7 +56,8 @@ and refuses to run if that namespace already exists, or if it cannot tell
 for a state change is a `kubectl wait` with a 60-second limit, so a demo that
 does not behave as shown fails instead of being recorded.
 
-The scenes: (1) delete a `GeneratedSecret` with `deletionPolicy: Retain`, the
+Scenes 1, 3 and 4 first show the example manifest (`yq --colors`, without the
+file's comment header), then apply it. The scenes: (1) delete a `GeneratedSecret` with `deletionPolicy: Retain`, the
 password survives; (2) restart the operator, the password is the same;
 (3) delete an SSH key Secret, a new key pair appears; (4) change a token's
 length, a new value appears and the Events show `Regenerated`.

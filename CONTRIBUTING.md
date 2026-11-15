@@ -29,9 +29,9 @@ Use the issue forms for bug reports, feature requests and questions. Never paste
 
 To report a security vulnerability, do not open an issue or pull request. Follow [SECURITY.md](SECURITY.md).
 
-## AI-assisted contributions
+## Contributions assisted by artificial intelligence
 
-AI-assisted contributions are allowed. The author must understand the change and must have tested it. Pull requests that look generated without understanding are closed without long discussion.
+Contributions assisted by artificial intelligence (AI) are allowed. The author must understand the change and must have tested it. Pull requests that look generated without understanding are closed without long discussion.
 
 ## Development setup
 

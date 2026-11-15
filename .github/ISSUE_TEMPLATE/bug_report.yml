@@ -38,7 +38,7 @@ body:
     id: manifest
     attributes:
       label: GeneratedSecret manifest
-      description: The `GeneratedSecret` that shows the problem. It contains the definition only, not generated values.
+      description: The `GeneratedSecret` that shows the problem, as you applied it. Replace every value under `spec.data` with `<redacted>`, because those values are copied into the Secret.
       render: yaml
     validations:
       required: true
@@ -46,7 +46,7 @@ body:
     id: describe-output
     attributes:
       label: Output of kubectl describe
-      description: Output of `kubectl describe gensecret <name> -n <namespace>`. The conditions and Events are what matter.
+      description: Output of `kubectl describe gensecret <name> -n <namespace>`. The conditions and Events are what matter. `describe` prints the spec and can echo `spec.data` values, so replace them with `<redacted>` before pasting.
       render: text
     validations:
       required: true
@@ -60,7 +60,7 @@ body:
     id: logs
     attributes:
       label: Operator logs (optional)
-      description: Output of `kubectl logs -n generated-secrets-system deployment/<release name>`. The operator never logs values.
+      description: Output of `kubectl logs -n generated-secrets-system deployment/<deployment name>`. The Deployment is named after the release name if that contains `generated-secrets-operator`, otherwise `<release name>-generated-secrets-operator`. The operator never logs values.
       render: text
     validations:
       required: false

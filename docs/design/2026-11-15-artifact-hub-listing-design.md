@@ -88,6 +88,8 @@ Not used, with reasons:
 
   The tag is not valid semver, so Artifact Hub's version listing skips it. The release workflow's own registry lookups MUST also tolerate a non-semver tag in that repository; verify `.github/scripts/registry-lookup.sh` and its test.
 - An agent pushes the file once (with a GitHub token allowed to write packages), and again only when the file changes. It is not part of `release.yml`: the file almost never changes, and a release step would add a moving part to the release pipeline without a lasting requirement. `docs/development.md` documents the one command.
+
+  **2026-11-15, owner decision:** the metadata is published by `.github/workflows/artifacthub-metadata.yml` when the file changes on `main`; the release process ends with the HTTP and OCI chart publication.
 - `owners` is not set; it is only needed for ownership claims.
 
 ## 5. Steps and who does them
@@ -102,6 +104,8 @@ Not used, with reasons:
 
    Copy the repository ID shown on the card.
 3. **Agent**: put the ID into `.github/artifacthub-repo.yml`, commit, and run the `oras push` (§4).
+
+   **2026-11-15, owner decision:** the push is done by `.github/workflows/artifacthub-metadata.yml` when the file changes on `main`; the release process ends with the HTTP and OCI chart publication.
 4. Wait for processing. Artifact Hub processes repositories every 30 minutes; the package is visible within about 5 minutes after a run. Verified publisher appears on the next processing run.
 5. **Agent**: verify the package page — Verified publisher, Signed (cosign), README rendered, CRD card with example, license, links, security report present, no release-candidate versions listed. Add the Artifact Hub badge to the README (contributor-readiness design §3 item 1).
 6. Not requested: "Official" status. It needs a manual GitHub issue and requires verified publisher plus ownership of the software. Possible later; no requirement now.

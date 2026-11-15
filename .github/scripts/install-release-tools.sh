@@ -15,13 +15,13 @@
 # `sha256sum --check --strict` against the SHA-256 of the linux_amd64 archive,
 # taken from the checksums file of that upstream release: `*_checksums.txt`
 # for syft, grype and oras (`oras_<version>_checksums.txt`), `checksums.txt`
-# for go-containerregistry (crane). Bump
-# version and checksum together. Renovate proposes the versions (the
-# `# renovate:` comments are read by renovate.json) but cannot compute the
-# checksums: a version-only bump fails the check, and the error names the
-# variable to update. The script only downloads, verifies and unpacks; it
-# runs nothing it downloaded. cosign is not here: sigstore/cosign-installer
-# installs it (COSIGN_VERSION in release.yml) and verifies the download itself.
+# for go-containerregistry (crane). Bump version and checksum together.
+# Renovate proposes the versions (the `# renovate:` comments are read by
+# renovate.json) but cannot compute the checksums: a version-only bump fails
+# the check, and the error names the variable to update. The script only
+# downloads, verifies and unpacks; it runs nothing it downloaded. cosign is
+# not here: sigstore/cosign-installer installs it (COSIGN_VERSION in
+# release.yml) and verifies the download itself.
 set -euo pipefail
 
 # renovate: datasource=github-releases depName=anchore/syft extractVersion=^v(?<version>.+)$

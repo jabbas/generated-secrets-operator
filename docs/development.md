@@ -824,10 +824,11 @@ pull request, not at the next `-rc` tag: yq runs in the `release-scripts` job,
 and syft, grype, crane and oras are installed by one script,
 `.github/scripts/install-release-tools.sh`, which holds their versions and
 checksums, is called by the `image`, `promote` and `helm-index` jobs of
-`release.yml` (oras: by `artifacthub-metadata.yml`), and is run for `all` its tools by the CI job `release-pins`
-(which then runs the tools with `--version` only). The script only downloads,
-verifies and unpacks. A tool added to it is covered by `release-pins` without
-touching that job. cosign stays on the `sigstore/cosign-installer` action
+`release.yml` (oras: by `artifacthub-metadata.yml`), and is run for `all` its
+tools by the CI job `release-pins` (which then runs the tools with `--version`
+only). The script only downloads, verifies and unpacks. A tool added to it is
+installed by `release-pins` without touching that job (add its `--version`
+line there to run it). cosign stays on the `sigstore/cosign-installer` action
 (`COSIGN_VERSION` in `release.yml`), which verifies its download itself, and
 Renovate does not propose cosign majors (v3 changes the signature format, see
 above). Take the checksum of the `linux_amd64` archive from the upstream

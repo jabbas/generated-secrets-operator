@@ -120,13 +120,13 @@ jobs:
 
   # release.yml downloads syft, grype and crane (and artifacthub-metadata.yml
   # oras) against SHA-256 values pinned in
-  # .github/scripts/install-release-tools.sh, but release.yml runs only on tags. This
-  # job runs that same script (the one place for those pins, `all` = every tool
-  # in it) on every pull request, so a version bump without its checksum
-  # (which Renovate cannot compute) fails here, with the `::error::` that names
-  # the variable, and not at the next release candidate. yq is covered by the
-  # `release-scripts` job (install-yq.sh). Nothing downloaded is run beyond
-  # `--version`.
+  # .github/scripts/install-release-tools.sh, but release.yml runs only on
+  # tags. This job runs that same script (the one place for those pins, `all`
+  # = every tool in it) on every pull request, so a version bump without its
+  # checksum (which Renovate cannot compute) fails here, with the `::error::`
+  # that names the variable, and not at the next release candidate. yq is
+  # covered by the `release-scripts` job (install-yq.sh). Nothing downloaded
+  # is run beyond `--version`.
   release-pins:
     runs-on: ubuntu-24.04
     permissions:

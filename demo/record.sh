@@ -70,9 +70,14 @@ cluster_created=false
 cleanup() {
   local exit_status=$?
   if [[ "$cluster_created" == true ]]; then
-    echo "Deleting kind cluster $cluster_name" >&2
-    if ! kind delete cluster --name "$cluster_name" --kubeconfig "$work_directory/kubeconfig"; then
-      echo "record.sh: could not delete kind cluster $cluster_name; delete it by hand" >&2
+    # kind removes a half-created cluster itself, so delete only if it is listed.
+    if ! remaining_clusters="$(kind get clusters)"; then
+      echo "record.sh: could not list kind clusters; if $cluster_name exists, delete it by hand" >&2
+    elif grep -qx "$cluster_name" <<< "$remaining_clusters"; then
+      echo "Deleting kind cluster $cluster_name" >&2
+      if ! kind delete cluster --name "$cluster_name" --kubeconfig "$work_directory/kubeconfig"; then
+        echo "record.sh: could not delete kind cluster $cluster_name; delete it by hand" >&2
+      fi
     fi
   fi
   rm -rf "$work_directory"
@@ -118,6 +123,8 @@ agg "$work_directory/demo.cast" "$work_directory/demo.gif" \
   --quiet \
   --last-frame-duration 4
 
+# Both files were recorded in a scratch directory and are moved only now: a
+# failed run must not overwrite the committed outputs.
 mkdir -p docs/assets
 mv "$work_directory/demo.cast" docs/assets/demo.cast
 mv "$work_directory/demo.gif" docs/assets/demo.gif

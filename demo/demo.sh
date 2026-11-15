@@ -10,17 +10,16 @@
 # stops the script with a non-zero exit status instead of recording a wrong
 # outcome. Only the typing delays use `sleep`.
 
+set -euo pipefail
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly repo_root
 readonly demo_namespace="demo"
 readonly operator_namespace="generated-secrets-system"
 readonly operator_deployment="generated-secrets-operator"
 readonly wait_timeout="60s"
-# Pacing; override for a faster dry run, e.g. TYPING_DELAY=0 PAUSE_SCALE=0.
+# Pacing; override for a faster dry run, e.g. TYPING_DELAY=0.
 readonly typing_delay="${TYPING_DELAY:-0.015}"
-readonly pause_scale="${PAUSE_SCALE:-1}"
-
-set -euo pipefail
 
 readonly style_reset=$'\e[0m'
 readonly style_bold=$'\e[1m'
@@ -36,7 +35,7 @@ fail() {
 }
 
 pause() {
-  sleep "$(awk -v seconds="$1" -v scale="$pause_scale" 'BEGIN { print seconds * scale }')"
+  sleep "$1"
 }
 
 # type_text <text>: print the text one character at a time, like a human typing.
@@ -114,9 +113,18 @@ sed -n '/^apiVersion:/,$p' examples/app-admin-password.yaml
 # --- preflight and setup (while the first frame is on screen) ---
 
 command -v kubectl > /dev/null || fail "kubectl not found on PATH"
-kubectl get deployment "$operator_deployment" --namespace "$operator_namespace" > /dev/null \
-  || fail "deployment $operator_deployment not found in namespace $operator_namespace: install the operator first"
-if kubectl get namespace "$demo_namespace" > /dev/null 2>&1; then
+# --ignore-not-found separates "absent" (empty output, success) from a real
+# error (unreachable API server, expired credentials, 403): the latter fails.
+if ! existing_deployment="$(kubectl get deployment "$operator_deployment" --namespace "$operator_namespace" --ignore-not-found --output name)"; then
+  fail "could not check whether deployment $operator_deployment exists in namespace $operator_namespace; see the kubectl error above"
+fi
+if [[ -z "$existing_deployment" ]]; then
+  fail "deployment $operator_deployment not found in namespace $operator_namespace: install the operator first"
+fi
+if ! existing_namespace="$(kubectl get namespace "$demo_namespace" --ignore-not-found --output name)"; then
+  fail "could not check whether namespace $demo_namespace exists; see the kubectl error above"
+fi
+if [[ -n "$existing_namespace" ]]; then
   fail "namespace $demo_namespace already exists; delete it first: kubectl delete namespace $demo_namespace"
 fi
 kubectl create namespace "$demo_namespace" > /dev/null
@@ -164,10 +172,22 @@ run_command "kubectl apply -f examples/rotated-shared-token.yaml -n $demo_namesp
 run_command "kubectl wait --for=condition=Ready gensecret/shared-token -n $demo_namespace --timeout=$wait_timeout"
 run_command "kubectl get secret shared-token -n $demo_namespace -o jsonpath='{.data.token}' | base64 -d; echo"
 token_before="$last_output"
+if [[ ${#token_before} -ne 48 ]]; then
+  fail "expected a 48-character token before the patch, got ${#token_before}"
+fi
+# The patch raises metadata.generation by one; the operator reports it in
+# status.observedGeneration once the new value is applied.
+if ! generation_before="$(kubectl get gensecret shared-token --namespace "$demo_namespace" --output 'jsonpath={.metadata.generation}')"; then
+  fail "could not read the generation of shared-token"
+fi
+generation_after=$((generation_before + 1))
 type_comment "token length 48 -> 64"
 run_command "kubectl patch gensecret shared-token -n $demo_namespace --type merge -p '{\"spec\":{\"fields\":[{\"name\":\"token\",\"length\":64}]}}'"
-run_command "kubectl wait --for=jsonpath='{.status.observedGeneration}'=2 gensecret/shared-token -n $demo_namespace --timeout=$wait_timeout"
+run_command "kubectl wait --for=jsonpath='{.status.observedGeneration}'=$generation_after gensecret/shared-token -n $demo_namespace --timeout=$wait_timeout"
 run_command "kubectl get secret shared-token -n $demo_namespace -o jsonpath='{.data.token}' | base64 -d; echo"
+if [[ ${#last_output} -ne 64 ]]; then
+  fail "expected a 64-character token after the patch, got ${#last_output}"
+fi
 expect_different "$token_before" "$last_output" "A new, longer token"
 run_command "kubectl get events -n $demo_namespace --field-selector reason=Regenerated"
 if [[ "$last_output" != *Regenerated* ]]; then

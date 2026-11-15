@@ -11,7 +11,7 @@ On `PATH`:
 - [`kind`](https://kind.sigs.k8s.io/), with a container provider. The provider
   comes from your environment; this repository's recordings use podman
   (`KIND_EXPERIMENTAL_PROVIDER=podman`). The script does not set it.
-- `helm` 4 and `kubectl`
+- `helm` 4 and `kubectl` 1.31 or newer (the demo uses `kubectl wait --for=create`)
 - [`asciinema`](https://docs.asciinema.org/) 3.x
 - [`agg`](https://github.com/asciinema/agg) (asciinema GIF generator)
 
@@ -39,8 +39,11 @@ The script:
 6. deletes the cluster, whatever the outcome.
 
 `demo/demo.sh` is what is recorded. It also runs on its own against any cluster
-that has the operator installed in `generated-secrets-system`; it creates the
-namespace `demo` and refuses to run if that namespace already exists. Every wait
+that has the operator installed with the release name `generated-secrets-operator`
+in the namespace `generated-secrets-system` (the Deployment is named after the
+release, so another release name does not work). It creates the namespace `demo`
+and refuses to run if that namespace already exists, or if it cannot tell
+(for example an unreachable cluster). Every wait
 for a state change is a `kubectl wait` with a 60-second limit, so a demo that
 does not behave as shown fails instead of being recorded.
 

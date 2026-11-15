@@ -118,4 +118,4 @@ Not used, with reasons:
 
 - The exact CRD description text.
 - Link names other than "support".
-- Where in the release tooling the `images` annotation is bumped, as long as the bump is automatic and tested.
+- How the `chart-test` check of the `images` annotation is implemented. The bump itself is manual, together with `version` and `appVersion` (§3), and a forgotten bump fails CI.

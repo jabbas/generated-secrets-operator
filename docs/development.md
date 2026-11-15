@@ -27,6 +27,10 @@ cargo xtask crdgen --check   # `cargo xtask crdgen` regenerates the CRD
 The CRD (`charts/generated-secrets-operator/files/crd/generatedsecrets.generatedsecrets.jabbas.eu.yaml`)
 is generated from the Rust types and rules; never edit it by hand.
 
+Pull-request CI (`ci.yml`) skips changes limited to `site/`, `demo/` and
+`docs/assets/`; pushes to `main` always run the full CI, which the release gate
+requires.
+
 ## Test layers
 
 Invalid fixtures live in `crates/generated-secrets-api/tests/fixtures/` and declare

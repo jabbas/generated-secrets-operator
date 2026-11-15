@@ -5,7 +5,7 @@
 [![Licence: Apache-2.0](https://img.shields.io/github/license/jabbas/generated-secrets-operator)](LICENSE)
 
 **Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys.
-Declared next to your app, never stored in Git.**
+Declared next to your app; the values are never stored in Git.**
 
 [![Terminal recording: a password survives deleting the GeneratedSecret and restarting the operator; a deleted SSH key is regenerated; a longer token length yields a new value](docs/assets/demo.gif)](https://asciinema.org/a/x5iEg5qgU8xqvcfN)
 
@@ -26,8 +26,8 @@ spec:
 
 - Helm's `randAlphaNum` with `lookup` generates a new value under Argo CD and
   `helm template`, because `lookup` returns nothing there.
-- Encrypting a password with SOPS (Secrets OPerationS) or Sealed Secrets is
-  pointless when no human needs to know it.
+- Encrypting a password with SOPS (Secrets OPerationS) or Sealed Secrets adds
+  key management when no human needs to know the password.
 - A pipeline that exists only to generate a key is a pipeline to maintain.
 
 The one promise: **a value changes only when you decide** — you change its
@@ -37,10 +37,12 @@ or when you re-apply the same manifest.
 
 ## Try it in 5 minutes
 
-You need `kind`, `helm` and `kubectl`. No clone of this repository is needed.
+You need `kind`, Helm 4 and `kubectl`, and a cluster running Kubernetes 1.34 or
+newer (the `kind` image below is the one this project tests with). No clone of
+this repository is needed.
 
 ```sh
-kind create cluster
+kind create cluster --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d
 helm repo add jabbas https://jabbas.github.io/helm-charts
 helm install generated-secrets-operator jabbas/generated-secrets-operator --version 0.2.0 --namespace generated-secrets-system --create-namespace --wait
 kubectl apply -f - <<'EOF'
@@ -59,11 +61,22 @@ kubectl wait --for=condition=Ready gensecret/app-admin --timeout=60s
 kubectl get secret app-admin -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-Re-apply the manifest or run `kubectl rollout restart deployment -n
-generated-secrets-system`: the password stays the same. Clean up with
-`kind delete cluster`. The HTTP chart repository is not signed; for the
-cosign-signed chart and how to verify it, see
-[Installation](docs/installation.md).
+Restart the operator and read the password again; it stays the same:
+
+```sh
+kubectl rollout restart deployment/generated-secrets-operator -n generated-secrets-system
+kubectl rollout status deployment/generated-secrets-operator -n generated-secrets-system
+kubectl get secret app-admin -o jsonpath='{.data.password}' | base64 -d; echo
+```
+
+Clean up:
+
+```sh
+kind delete cluster
+```
+
+The HTTP chart repository is not signed; for the cosign-signed chart and how to
+verify it, see [Installation](docs/installation.md).
 
 ## When to use it, and when not
 
@@ -73,7 +86,7 @@ keys, SSH key pairs, basic-auth credentials. Other tools fit other jobs:
 | Tool | Notes |
 |---|---|
 | [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets), [SOPS](https://github.com/getsops/sops) | Encrypt values a human already has, to commit them to Git. Right for externally issued secrets; for machine-invented ones they add key management for no benefit. |
-| [External Secrets Operator](https://external-secrets.io) | Syncs secrets from an external store (Vault, Amazon Web Services and others); right when the source of truth is such a store. Its [generators](https://external-secrets.io/latest/guides/generator/) say: "The generator does not keep track of the produced values. Every invocation produces a new set of values." For stable values its [documentation](https://external-secrets.io/latest/api/externalsecret/) combines `refreshPolicy: CreatedOnce`, `target.immutable: true` and `creationPolicy: Orphan`. |
+| [External Secrets Operator](https://external-secrets.io) | Syncs secrets from an external store (for example AWS Secrets Manager); right when that store is the source of truth. Its [generators](https://external-secrets.io/latest/guides/generator/) say "Every invocation produces a new set of values"; stable values need [three settings per object](https://external-secrets.io/latest/api/externalsecret/) (`refreshPolicy: CreatedOnce`, `target.immutable: true`, `creationPolicy: Orphan`), and it runs [three components](https://external-secrets.io/latest/api/components/) (controller, webhook, certificate controller). Here stable values are the default, and `deletionPolicy: Retain` lets a re-created `GeneratedSecret` adopt its Secret. |
 | [HashiCorp Vault](https://www.vaultproject.io), [OpenBao](https://openbao.org) | A full secrets platform; heavy if you need only a few generated passwords. |
 | Helm `randAlphaNum` + `lookup` | [`lookup` returns nothing during `helm template` and client dry-run](https://helm.sh/docs/chart_template_guide/functions_and_pipelines/), and [Argo CD does not support it](https://github.com/argoproj/argo-cd/issues/5202), so the value is regenerated. |
 | [mittwald/kubernetes-secret-generator](https://github.com/mittwald/kubernetes-secret-generator) | The best-known earlier generator: annotation-driven, on plain Secrets. Latest release v3.4.1 (August 2025); the one before is from April 2022. |
@@ -81,14 +94,18 @@ keys, SSH key pairs, basic-auth credentials. Other tools fit other jobs:
 
 **When not to use Generated Secrets Operator:**
 
-- The secret is issued by someone else (a vendor API key, a password from
-  another team).
+- The secret is issued by someone else (a vendor API key, another team's
+  password).
 - The value must be known before deployment, or must be identical across
   clusters.
-- You cannot lose the values with the cluster. Generated values live only in
-  the cluster (in etcd, the Kubernetes data store), so back up the Secrets, for
-  example with [Velero](https://velero.io), if losing the cluster must not lose
-  them.
+- The values must survive losing the cluster. They live only in the cluster
+  (in etcd, the Kubernetes data store), so back up the Secrets, for example
+  with [Velero](https://velero.io).
+
+Generated values are ordinary Secrets: readable with `get secrets`, and
+unencrypted in etcd unless encryption at rest is enabled (see
+[Security](docs/security.md)). They come from the operating system's
+cryptographically secure random number generator.
 
 ## Features
 
@@ -106,16 +123,17 @@ keys, SSH key pairs, basic-auth credentials. Other tools fit other jobs:
   `GeneratedSecret`) or `Retain` (the Secret survives, and a re-created
   `GeneratedSecret` adopts it and keeps its values).
 - **Mistakes surface where you look.** A bad manifest is rejected at
-  `kubectl apply` / `helm install` time by the CRD schema and CEL rules; runtime
-  problems appear in `status.conditions` and Events.
+  `kubectl apply` / `helm install` time by the CRD (custom resource definition)
+  schema and CEL (Common Expression Language) rules; runtime problems appear in
+  `status.conditions` and Events.
 - **Least privilege.** No `delete` on Secrets, only metadata of managed Secrets
   is cached, values never reach logs, Events, status or metrics, and the
   operator never touches a Secret it did not create. Cluster-wide or
   per-namespace RBAC (role-based access control; a real boundary).
 - **Production packaging.** Multi-arch image (`linux/amd64`, `linux/arm64`),
-  OCI Helm chart, leader election for a highly available deployment, Prometheus
-  metrics, Pod Security `restricted`, cosign-signed releases with an SBOM
-  (software bill of materials).
+  Helm chart (also as an OCI, Open Container Initiative, artifact), leader
+  election for a highly available deployment, Prometheus metrics, Pod Security
+  `restricted`; signed releases, see [Status](#status).
 
 ## Status
 
@@ -123,12 +141,13 @@ The API is `generatedsecrets.jabbas.eu/v1alpha1`. Defaults and the fingerprint
 format are frozen for this version, so upgrades never rotate your credentials.
 Breaking changes before `v1beta1` are possible but are always called out in the
 [changelog](CHANGELOG.md). Releases are cosign-signed, multi-architecture and
-carry an SBOM; every release candidate passes a test on a real cluster before
-it is promoted. Supported Kubernetes: 1.34 and newer.
+carry an SBOM (software bill of materials); every release candidate passes a
+[test on a real cluster](docs/releases/0.2.0-home-lab-test.md) before it is
+promoted. Supported Kubernetes: 1.34 and newer.
 
 The project was renamed from SecretSpec Operator in 0.2.0, a breaking change;
 see [Moving from 0.1.x](CHANGELOG.md#moving-from-01x) and
-[ADR 0006](docs/adr/0006-rename-to-generated-secrets-operator.md).
+[ADR (architecture decision record) 0006](docs/adr/0006-rename-to-generated-secrets-operator.md).
 
 ## Roadmap
 
@@ -167,4 +186,5 @@ Apache-2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Acknowledgement
 
-Generated Secrets Operator was inspired by earlier Kubernetes secret-generator projects.
+Generated Secrets Operator was inspired by
+[mittwald/kubernetes-secret-generator](https://github.com/mittwald/kubernetes-secret-generator).

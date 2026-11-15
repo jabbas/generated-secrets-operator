@@ -9,9 +9,10 @@
 # demo/demo.sh with asciinema and renders a GIF with agg. Outputs:
 #   docs/assets/demo.cast
 #   docs/assets/demo.gif
-# The cluster is deleted when the script ends, whatever the outcome. The kind
-# provider (docker or podman) comes from the environment, e.g.
-# KIND_EXPERIMENTAL_PROVIDER=podman; this script does not set it.
+# The cluster this run created is deleted when the script ends, whenever
+# `kind get clusters` lists it. The kind provider (docker or podman) comes from
+# the environment, e.g. KIND_EXPERIMENTAL_PROVIDER=podman; this script does not
+# set it.
 
 set -euo pipefail
 
@@ -104,7 +105,6 @@ kubectl label namespace "$operator_namespace" pod-security.kubernetes.io/enforce
 helm install generated-secrets-operator "$chart_reference" \
   --version "$chart_version" \
   --namespace "$operator_namespace" \
-  --create-namespace \
   --wait \
   --timeout 5m
 

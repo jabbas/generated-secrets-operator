@@ -701,22 +701,17 @@ Registration (owner, once, with the owner's Artifact Hub login):
    Add, kind **Helm charts**, name `generated-secrets-operator` (it cannot be
    renamed later), URL `oci://ghcr.io/jabbas/charts/generated-secrets-operator`.
 2. Copy the repository ID shown on the repository card into `repositoryID` in
-   `.github/artifacthub-repo.yml`, merge that to `main`, then push the file
-   as below.
+   `.github/artifacthub-repo.yml` and merge that to `main`; the workflow
+   below publishes it.
 
 Artifact Hub reads that file from the special tag `artifacthub.io` of the
 chart's OCI repository; it is not part of the chart and the release workflow
-does not publish it. Push it by hand from the repository root, with a token
-that may write packages (`oras login ghcr.io` first), once after the
-registration and again only when the file changes. [oras](https://oras.land)
-is needed only for this manual one-off, not for building, testing or
-releasing:
-
-```sh
-oras push ghcr.io/jabbas/charts/generated-secrets-operator:artifacthub.io \
-  --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
-  .github/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
-```
+does not publish it. The workflow `.github/workflows/artifacthub-metadata.yml`
+publishes it automatically whenever the file changes on `main`, and can be run
+by hand from the Actions tab ("Artifact Hub metadata", "Run workflow", branch
+`main`). It installs the pinned `oras` (`.github/scripts/install-release-tools.sh`),
+logs in to ghcr.io with the workflow's `GITHUB_TOKEN` (the package must grant this
+repository's Actions write access) and verifies the pushed manifest afterwards.
 
 The tag `artifacthub.io` is not semver, so neither Artifact Hub's version list
 nor the release workflow treats it as a chart version: the workflow only looks
@@ -729,8 +724,9 @@ the cosign `sha256-<digest>.sig` tags already live in the same repository.
   container package and the `charts/generated-secrets-operator` package on ghcr.io must
   be public and linked to this repository (package settings). Without that,
   users cannot pull or verify them anonymously.
-- **Artifact Hub.** Registering the OCI chart repository and pushing
-  `.github/artifacthub-repo.yml`: see [Artifact Hub metadata](#artifact-hub-metadata).
+- **Artifact Hub.** Registering the OCI chart repository (once); the metadata file
+  `.github/artifacthub-repo.yml` is published by its own workflow: see
+  [Artifact Hub metadata](#artifact-hub-metadata).
 - **`HELM_CHARTS_TOKEN` (Environment `helm-charts`).** The only credential that
   can write to `jabbas/helm-charts`. Create a **fine-grained personal access
   token**: resource owner `jabbas`, repository access **only**
@@ -753,7 +749,7 @@ the cosign `sha256-<digest>.sig` tags already live in the same repository.
   - The Environment `helm-charts` has a deployment tag policy
     (`[0-9]*.[0-9]*.[0-9]*`) and holds `HELM_CHARTS_TOKEN`; only release tags
     can use it.
-- **Pinned tools** (cosign, syft, grype, crane, yq, helm, kind and its node
+- **Pinned tools** (cosign, syft, grype, crane, oras, yq, helm, kind and its node
   images, cargo-zigbuild, cargo-auditable, cargo-deny, cargo-audit, ziglang,
   BuildKit): see [Pinned tools and Renovate](#pinned-tools-and-renovate) below.
 - **Accepted residual risk.** If an existing chart version stays unreadable
@@ -779,7 +775,7 @@ comment), it tracks:
 | Pin | Where | Renovate PR | A human still |
 |---|---|---|---|
 | cosign (`COSIGN_VERSION`) | `env:` of `release.yml` | "release tooling" | nothing: `sigstore/cosign-installer` verifies the download itself |
-| syft, grype, crane (`*_VERSION`, `*_SHA256`) | `.github/scripts/install-release-tools.sh` | "release tooling" (version only; `release-pins` fails until the checksum is updated) | **updates `SYFT_SHA256` / `GRYPE_SHA256` / `CRANE_SHA256`** |
+| syft, grype, crane, oras (`*_VERSION`, `*_SHA256`) | `.github/scripts/install-release-tools.sh` | "release tooling" (version only; `release-pins` fails until the checksum is updated) | **updates `SYFT_SHA256` / `GRYPE_SHA256` / `CRANE_SHA256` / `ORAS_SHA256`** |
 | yq (`YQ_VERSION`, `YQ_SHA256`) | `.github/scripts/install-yq.sh` | "release tooling" (version only) | **updates `YQ_SHA256`** |
 | cargo-zigbuild, cargo-auditable | `tool:` of `taiki-e/install-action` in `ci.yml` (`e2e`) and `release.yml` (`build`); `cargo install` line below | "release tooling" | nothing |
 | ziglang | `.github/requirements/ziglang.txt` (hash-pinned; pip manager), `pip install` line below | "release tooling" | nothing: Renovate rewrites the hashes (all files of the release, as PyPI lists them) |
@@ -818,17 +814,17 @@ extracts from this repository is `renovate --platform=local --dry-run=lookup`
 with `LOG_LEVEL=debug` and a GitHub token in `RENOVATE_GITHUB_COM_TOKEN`
 (without one, the GitHub datasources are skipped).
 
-**Checksums stay pinned and fail closed.** syft, grype, crane and yq are
+**Checksums stay pinned and fail closed.** syft, grype, crane, oras and yq are
 verified against a SHA-256 pinned next to the version; Renovate cannot compute
 it, and the repository deliberately never fetches checksums at run time (they
 would then only prove that the download matches what the same host says). A
 version bump without its checksum stops at `sha256sum --check` with an
 `::error::` that names the variable (`SYFT_SHA256`, …). This happens in the
 pull request, not at the next `-rc` tag: yq runs in the `release-scripts` job,
-and syft, grype and crane are installed by one script,
+and syft, grype, crane and oras are installed by one script,
 `.github/scripts/install-release-tools.sh`, which holds their versions and
 checksums, is called by the `image`, `promote` and `helm-index` jobs of
-`release.yml`, and is run for `all` its tools by the CI job `release-pins`
+`release.yml` (oras: by `artifacthub-metadata.yml`), and is run for `all` its tools by the CI job `release-pins`
 (which then runs the tools with `--version` only). The script only downloads,
 verifies and unpacks. A tool added to it is covered by `release-pins` without
 touching that job. cosign stays on the `sigstore/cosign-installer` action
@@ -840,6 +836,7 @@ release:
 - syft, grype: `*_checksums.txt` (archive `<tool>_<version>_linux_amd64.tar.gz`);
 - crane: `checksums.txt` of go-containerregistry (archive
   `go-containerregistry_Linux_x86_64.tar.gz`);
+- oras: `oras_<version>_checksums.txt` (archive `oras_<version>_linux_amd64.tar.gz`);
 - yq: the SHA-256 column of the `checksums` file (the column order is in
   `checksums_hashes_order`; archive `yq_linux_amd64.tar.gz`).
 

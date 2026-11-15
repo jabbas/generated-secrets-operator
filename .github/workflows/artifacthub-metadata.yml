@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Publishes the Artifact Hub repository metadata (.github/artifacthub-repo.yml)
+# to the special tag `artifacthub.io` of the chart's OCI repository, where
+# Artifact Hub reads it (docs/development.md, "Artifact Hub metadata").
+#
+# This is deliberately NOT part of release.yml: a release ends with the chart on
+# the HTTP Helm repository and on OCI, and this file changes rarely. It runs
+# when the file changes on main, or by hand (workflow_dispatch).
+name: Artifact Hub metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/artifacthub-repo.yml
+      - .github/workflows/artifacthub-metadata.yml
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: artifacthub-metadata
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # workflow_dispatch can be started from any branch; publish only from main.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # oras is pinned with a SHA-256 in the one place for release tools.
+      - name: Install the pinned oras
+        run: bash .github/scripts/install-release-tools.sh oras
+      - name: Log in to ghcr.io
+        env:
+          REGISTRY_ACTOR: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$REGISTRY_TOKEN" | oras login ghcr.io --username "$REGISTRY_ACTOR" --password-stdin
+      - name: Push the repository metadata
+        run: |
+          oras push ghcr.io/jabbas/charts/generated-secrets-operator:artifacthub.io \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+            .github/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+      - name: Verify the published manifest
+        run: |
+          oras manifest fetch ghcr.io/jabbas/charts/generated-secrets-operator:artifacthub.io \
+            | jq --exit-status '.layers[] | select(.mediaType == "application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml")'

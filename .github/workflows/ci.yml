@@ -118,8 +118,9 @@ jobs:
       - run: bash .github/scripts/release-graph-check-test.sh
       - run: bash .github/scripts/release-graph-check.sh
 
-  # release.yml downloads syft, grype and crane against SHA-256 values pinned
-  # in .github/scripts/install-release-tools.sh, but it runs only on tags. This
+  # release.yml downloads syft, grype and crane (and artifacthub-metadata.yml
+  # oras) against SHA-256 values pinned in
+  # .github/scripts/install-release-tools.sh, but release.yml runs only on tags. This
   # job runs that same script (the one place for those pins, `all` = every tool
   # in it) on every pull request, so a version bump without its checksum
   # (which Renovate cannot compute) fails here, with the `::error::` that names
@@ -144,6 +145,7 @@ jobs:
           syft --version
           grype --version
           crane version
+          oras version
 
   # Applies the generated CRD to a real API server and checks the fixtures
   # against its validation (CEL, schema, defaulting). Node images are those

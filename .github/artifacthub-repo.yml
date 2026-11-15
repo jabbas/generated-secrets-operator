@@ -4,8 +4,9 @@
 # (docs/design/2026-11-15-artifact-hub-listing-design.md, §4).
 #
 # `repositoryID` comes from the repository's registration on Artifact Hub.
-# The file is published to the OCI repository with the `oras push` command
-# in docs/development.md ("Artifact Hub metadata").
+# The workflow .github/workflows/artifacthub-metadata.yml publishes this file
+# to the OCI repository whenever it changes on main (docs/development.md,
+# "Artifact Hub metadata").
 repositoryID: ba386f98-ca98-4d3b-9f4a-f1012397eda8
 
 # Hide release candidates: Artifact Hub would otherwise show the highest

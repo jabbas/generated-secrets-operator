@@ -101,6 +101,7 @@
       </div>
 <pre tabindex="0"><code><span class="cmd">kind</span> create cluster --image kindest/node:v1.34.11@sha256:44e222ee2132dab25ff87301682f89eb82c7880ea3a1bf543bfe9708fd08d67d
 <span class="cmd">helm</span> repo add jabbas https://jabbas.github.io/helm-charts
+<span class="cmd">helm</span> repo update jabbas
 <span class="cmd">helm</span> install generated-secrets-operator jabbas/generated-secrets-operator --namespace generated-secrets-system --create-namespace --wait
 <span class="cmd">kubectl</span> apply -f - &lt;&lt;'EOF'
 <span class="k">apiVersion</span>: generatedsecrets.jabbas.eu/v1alpha1

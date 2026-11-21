@@ -3,23 +3,26 @@
 #
 # Installs pinned release binaries on a GitHub Actions linux/amd64 runner:
 #
-#   bash .github/scripts/install-release-tools.sh syft grype crane
+#   bash .github/scripts/install-release-tools.sh syft grype crane oras actionlint
 #
 # Used by the `image`, `promote` and `helm-index` jobs of release.yml (scan,
-# SBOM, registry access) and by the `release-pins` job of ci.yml, which runs
-# the same script on every pull request, so a pin that does not verify is
-# found there and not at the next release candidate.
+# SBOM, registry access), by artifacthub-metadata.yml (oras), by the
+# `actionlint` job of ci.yml (workflow linter) and by the `release-pins` job
+# of ci.yml, which runs the same script on every pull request, so a pin that
+# does not verify is found there and not at the next release candidate.
 #
 # This file is the one place for these pins. Each archive is verified with
 # `sha256sum --check --strict` against the SHA-256 of the linux_amd64 archive,
 # taken from the checksums file of that upstream release: `*_checksums.txt`
-# for syft and grype, `checksums.txt` for go-containerregistry (crane). Bump
-# version and checksum together. Renovate proposes the versions (the
-# `# renovate:` comments are read by renovate.json) but cannot compute the
-# checksums: a version-only bump fails the check, and the error names the
-# variable to update. The script only downloads, verifies and unpacks; it
-# runs nothing it downloaded. cosign is not here: sigstore/cosign-installer
-# installs it (COSIGN_VERSION in release.yml) and verifies the download itself.
+# for syft, grype, oras (`oras_<version>_checksums.txt`) and actionlint
+# (`actionlint_<version>_checksums.txt`), `checksums.txt` for
+# go-containerregistry (crane). Bump version and checksum together.
+# Renovate proposes the versions (the `# renovate:` comments are read by
+# renovate.json) but cannot compute the checksums: a version-only bump fails
+# the check, and the error names the variable to update. The script only
+# downloads, verifies and unpacks; it runs nothing it downloaded. cosign is
+# not here: sigstore/cosign-installer installs it (COSIGN_VERSION in
+# release.yml) and verifies the download itself.
 set -euo pipefail
 
 # renovate: datasource=github-releases depName=anchore/syft extractVersion=^v(?<version>.+)$
@@ -34,14 +37,22 @@ GRYPE_SHA256=e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85
 CRANE_VERSION=0.22.1
 CRANE_SHA256=0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0
 
+# renovate: datasource=github-releases depName=oras-project/oras extractVersion=^v(?<version>.+)$
+ORAS_VERSION=1.3.6
+ORAS_SHA256=66fb0ad7206f3f6fa77ed5b552049d364ccf4b50b1684554f731f76302b52ca0
+
+# renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.+)$
+ACTIONLINT_VERSION=1.7.12
+ACTIONLINT_SHA256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+
 if [[ $# -eq 0 ]]; then
-  echo "usage: install-release-tools.sh <syft|grype|crane>... | all" >&2
+  echo "usage: install-release-tools.sh <syft|grype|crane|oras|actionlint>... | all" >&2
   exit 2
 fi
 # `all` is every tool of this file: the release-pins job of ci.yml uses it, so
 # a tool added here is checked there without touching that job.
 if [[ "$*" == all ]]; then
-  set -- syft grype crane
+  set -- syft grype crane oras actionlint
 fi
 
 temp="${RUNNER_TEMP:?RUNNER_TEMP is not set (this script is for Actions runners)}"
@@ -72,8 +83,22 @@ for tool in "$@"; do
       archive="go-containerregistry_Linux_x86_64.tar.gz"
       url="https://github.com/google/go-containerregistry/releases/download/v${version}/${archive}"
       ;;
+    oras)
+      prefix=ORAS
+      version="$ORAS_VERSION"
+      checksum="$ORAS_SHA256"
+      archive="oras_${version}_linux_amd64.tar.gz"
+      url="https://github.com/oras-project/oras/releases/download/v${version}/${archive}"
+      ;;
+    actionlint)
+      prefix=ACTIONLINT
+      version="$ACTIONLINT_VERSION"
+      checksum="$ACTIONLINT_SHA256"
+      archive="actionlint_${version}_linux_amd64.tar.gz"
+      url="https://github.com/rhysd/actionlint/releases/download/v${version}/${archive}"
+      ;;
     *)
-      printf '::error::install-release-tools.sh does not know the tool %q (syft, grype, crane)\n' "$tool" >&2
+      printf '::error::install-release-tools.sh does not know the tool %q (syft, grype, crane, oras, actionlint)\n' "$tool" >&2
       exit 2
       ;;
   esac

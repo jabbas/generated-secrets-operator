@@ -3,9 +3,12 @@
 [![Latest release](https://img.shields.io/github/v/release/jabbas/generated-secrets-operator)](https://github.com/jabbas/generated-secrets-operator/releases/latest)
 [![CI](https://github.com/jabbas/generated-secrets-operator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jabbas/generated-secrets-operator/actions/workflows/ci.yml)
 [![Licence: Apache-2.0](https://img.shields.io/github/license/jabbas/generated-secrets-operator)](LICENSE)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/generated-secrets-operator)](https://artifacthub.io/packages/helm/generated-secrets-operator/generated-secrets-operator)
 
 **Generate Kubernetes Secrets in-cluster: passwords, tokens, SSH keys.
 Declared next to your app; the values are never stored in Git.**
+
+Website: https://generatedsecrets.jabbas.eu
 
 [![Terminal recording: a password survives deleting the GeneratedSecret and restarting the operator; a deleted SSH key is regenerated; a longer token length yields a new value](docs/assets/demo.gif)](https://asciinema.org/a/x5iEg5qgU8xqvcfN)
 

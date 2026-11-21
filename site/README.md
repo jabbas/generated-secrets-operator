@@ -19,10 +19,10 @@ contain it: the deploy workflow copies `docs/assets/demo.cast` next to
 Copy the site and the recording into a scratch directory and serve it:
 
 ```sh
-mkdir -p "$TMPDIR/site-preview"
-cp -R site/. "$TMPDIR/site-preview/"
-cp docs/assets/demo.cast "$TMPDIR/site-preview/demo.cast"
-python3 -m http.server --directory "$TMPDIR/site-preview" 8000
+mkdir -p "${TMPDIR:-/tmp}/site-preview"
+cp -R site/. "${TMPDIR:-/tmp}/site-preview/"
+cp docs/assets/demo.cast "${TMPDIR:-/tmp}/site-preview/demo.cast"
+python3 -m http.server --directory "${TMPDIR:-/tmp}/site-preview" 8000
 ```
 
 Open http://127.0.0.1:8000/. Opening `index.html` through `file://` does not
@@ -81,6 +81,9 @@ from the repository root:
 ```sh
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --screenshot=site/og.png "file://$PWD/docs/assets/og-source.html"
 ```
+
+The command shows the macOS Chrome path; on Linux use `google-chrome` or
+`chromium` instead.
 
 Look at the result: the `apiVersion` line must end before the right edge while
 the terminal frame still reads as cropped.

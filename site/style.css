@@ -282,7 +282,9 @@ main > .section:first-child { border-top: 0; padding-top: 40px; }
 
 .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-family: var(--mono); font-size: 14px; }
 .checks li { position: relative; padding-left: 26px; }
-.checks li::before { content: "✓"; position: absolute; left: 0; color: var(--accent); }
+/* The tick is decorative: the span is aria-hidden in the HTML, so screen readers skip it. */
+.checks .tick { position: absolute; left: 0; color: var(--accent); }
+.checks .tick::before { content: "✓"; }
 .checks code { font-size: inherit; }
 
 /* Footer */

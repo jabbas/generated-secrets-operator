@@ -168,7 +168,7 @@ as sensitive. A Secret *without* the labels is never adopted.
 
 ## Dependency advisories: the ignores
 
-`cargo audit` and `cargo deny` run in CI. Two advisories are deliberately
+`cargo audit` and `cargo deny` run in CI. Three advisories are deliberately
 ignored. The first is `RUSTSEC-2023-0071`, a timing side channel in RSA
 private-key *operations* (the "Marvin attack") for which the `rsa` crate has no
 patched release. The
@@ -192,6 +192,20 @@ while the key is generated. No fixed 0.5.x release exists; the fix is in
 `crypto-bigint` 0.7.6 or later, and the ignore is revisited when a stable
 `ssh-key` 0.7 ships. If you generate ECDSA keys and consider such an observer
 part of your threat model, use ed25519 (the default) instead.
+
+A third advisory is ignored for a different reason: `RUSTSEC-2026-0543` says
+that `chrono` is **unmaintained** (all versions are affected, there is no patched
+release, and its maintainer recommends `jiff`). It is informational; no
+vulnerability is reported. The operator has `chrono` only as a **dev-dependency**:
+the `cel` feature of `kube`, enabled for `generated-secrets-api`, pulls
+`kube-core` → `kube-cel` → `cel` → `chrono`, and the tests use it to evaluate the
+CRD's CEL rules client-side. The operator binary does not contain it (its normal
+and build dependency graph has no `kube-cel`), so nothing running in your cluster
+is affected. The feature cannot be switched off from this repository, because
+`cel` enables `chrono` by default and `kube-cel` depends on `cel` with default
+features. The ignore is removed when `kube-cel` (or `cel`) drops `chrono`; it is
+tracked in the issue "Remove the RUSTSEC-2026-0543 ignore when chrono leaves the
+dependency tree".
 
 ## Release signing and SBOM
 

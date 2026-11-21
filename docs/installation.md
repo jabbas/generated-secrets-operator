@@ -237,7 +237,9 @@ CHART_DIGEST="$(cosign verify "ghcr.io/jabbas/charts/generated-secrets-operator:
 # 2. The chart layer of that manifest (by digest, not by tag).
 LAYER_DIGEST="$(crane manifest "ghcr.io/jabbas/charts/generated-secrets-operator@${CHART_DIGEST}" \
   | jq -er '.layers[] | select(.mediaType == "application/vnd.cncf.helm.chart.content.v1.tar+gzip") | .digest')"
-# Without crane: oras manifest fetch "ghcr.io/jabbas/charts/generated-secrets-operator@${CHART_DIGEST}" | jq ...  (same filter)
+# Or, using oras instead of crane (run one of the two, not both):
+# LAYER_DIGEST="$(oras manifest fetch "ghcr.io/jabbas/charts/generated-secrets-operator@${CHART_DIGEST}" \
+#   | jq -er '.layers[] | select(.mediaType == "application/vnd.cncf.helm.chart.content.v1.tar+gzip") | .digest')"
 
 # 3. The package from the HTTP repository, and the digest its index entry carries.
 helm pull jabbas/generated-secrets-operator --version "${CHART_VERSION}" --destination .

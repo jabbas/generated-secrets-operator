@@ -24,14 +24,16 @@ ignore = [
     # `chrono` is unmaintained (informational; all versions affected, no
     # patched release; its maintainer recommends jiff). It is not a
     # vulnerability. We have 0.4.45 only through the DEV-dependency feature
-    # `kube/cel` of generated-secrets-api: cel -> kube-cel -> kube-core ->
-    # kube, used by tests/cel.rs to evaluate the CRD's CEL rules client-side.
-    # It is not in the operator binary (the normal and build graph has no
-    # kube-cel). `cel` enables chrono by default and kube-cel pulls `cel` with
-    # default features, so the feature cannot be turned off from here. Revisit
-    # when kube-cel (or cel) drops chrono; tracked in
+    # `kube/cel` of generated-secrets-api: kube (feature "cel") -> kube-core ->
+    # kube-cel -> cel -> chrono, used by tests/cel.rs to evaluate the CRD's CEL
+    # rules client-side. It is not in the operator binary (the normal and build
+    # graph has no kube-cel). kube-cel depends on chrono directly (its
+    # `validation` feature, enabled by kube-core's `cel` feature) and on `cel`
+    # with default features, which enable chrono too, so nothing in this
+    # repository can drop it short of dropping the CEL tests. Revisit when
+    # kube-cel (or cel) drops chrono; tracked in
     # https://github.com/jabbas/generated-secrets-operator/issues/48.
-    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained (informational, no vulnerability); only a dev-dependency via kube/cel -> kube-cel -> cel for the CEL rule tests, not in the operator binary; cannot be disabled (kube-cel pulls cel with default features); revisit when kube-cel or cel drops chrono, see issue 48" },
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained (informational, no vulnerability); only a dev-dependency via kube (feature cel) -> kube-core -> kube-cel -> cel for the CEL rule tests, not in the operator binary; kube-cel depends on chrono directly and on cel with default features, so nothing here can drop it; revisit when kube-cel or cel drops chrono, see issue 48" },
 ]
 
 [licenses]

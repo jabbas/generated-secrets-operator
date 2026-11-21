@@ -2,13 +2,13 @@
 
 ## Prerequisites
 
-- Rust toolchain (`rust-toolchain.toml` pins the exact release, currently 1.99.1,
+- Rust toolchain (`rust-toolchain.toml` pins the exact release, currently 1.100.0,
   so CI, the release build and your machine agree; `rustup` installs it on first
   use. Renovate proposes a new release together with `rust-version` in the
   workspace `Cargo.toml`, in one pull request; a new Rust may add clippy lints,
   and CI runs clippy with `-D warnings`, so fix them on that branch before
   merging. The minimum Rust version of the workspace is that toolchain's
-  `major.minor` (1.99), the one the code is built and tested with.)
+  `major.minor` (1.100), the one the code is built and tested with.)
 - `cargo-deny` for `cargo deny check`
 - For the server-side tests only: a container runtime — **Docker or Podman** —
   and [kind](https://kind.sigs.k8s.io/) (the CI pins its version in

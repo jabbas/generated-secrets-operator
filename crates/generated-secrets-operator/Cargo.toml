@@ -18,7 +18,7 @@ futures.workspace = true
 generated-secrets-api = { path = "../generated-secrets-api" }
 generated-secrets-core = { path = "../generated-secrets-core" }
 # The timestamp type inside k8s-openapi's `Time`; same 0.2 line as generated-secrets-core.
-jiff = { version = "0.2.38", default-features = false, features = ["alloc", "std"] }
+jiff = { version = "1.0.0", default-features = false, features = ["alloc", "std"] }
 k8s-openapi.workspace = true
 # `ring` is the single rustls crypto provider used across the workspace.
 # `unstable-runtime` gates `Controller::for_stream`, needed to filter the

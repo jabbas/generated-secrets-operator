@@ -196,13 +196,14 @@ that `chrono` is **unmaintained** (all versions are affected, there is no patche
 release, and its maintainer recommends `jiff`). It is informational; no
 vulnerability is reported. The operator has `chrono` only as a **dev-dependency**:
 the `cel` feature of `kube`, enabled for `generated-secrets-api`, pulls
-`kube` (feature `cel`) → `kube-core` → `kube-cel` → `cel` → `chrono`, and the
-tests use it to evaluate the CRD's CEL rules client-side. The operator binary does
-not contain it (its normal and build dependency graph has no `kube-cel`), so
-nothing running in your cluster is affected. Nothing in this repository can drop
-it short of dropping the CEL tests: `kube-cel` depends on `chrono` directly (its
-`validation` feature, enabled by the `cel` feature of `kube-core`) and on `cel`
-with default features, which enable `chrono` as well. The ignore is removed when
+`kube-core` → `kube-cel` → `cel` → `chrono` (`kube-cel` also depends on `chrono`
+directly), and the tests use it to evaluate the CRD's CEL rules client-side. The
+operator binary does not contain it (its normal and build dependency graph has no
+`kube-cel`), so nothing running in your cluster is affected. Nothing in this
+repository can drop it short of dropping the CEL tests: the `cel` feature of
+`kube-core` enables the `validation` feature of `kube-cel`, which brings in
+`chrono`, and `kube-cel` takes `cel` with its default features, which include
+`chrono` as well. The ignore is removed when
 `kube-cel` (or `cel`) drops `chrono`; it is tracked in
 [#48](https://github.com/jabbas/generated-secrets-operator/issues/48).
 

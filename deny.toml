@@ -27,11 +27,13 @@ ignore = [
     # `kube/cel` of generated-secrets-api: kube (feature "cel") -> kube-core ->
     # kube-cel -> cel -> chrono, used by tests/cel.rs to evaluate the CRD's CEL
     # rules client-side. It is not in the operator binary (the normal and build
-    # graph has no kube-cel). kube-cel depends on chrono directly (its
-    # `validation` feature, enabled by kube-core's `cel` feature) and on `cel`
-    # with default features, which enable chrono too, so nothing in this
-    # repository can drop it short of dropping the CEL tests. Revisit when
-    # kube-cel (or cel) drops chrono; tracked in
+    # graph has no kube-cel). Two routes lead to chrono, both inside
+    # kube-cel 0.8.0 and cel 0.13.0: kube-cel's optional chrono dependency,
+    # which its `validation` feature enables (kube-core's `cel` feature turns
+    # that on), and `cel` itself, which kube-cel takes with default features
+    # (cel's default `chrono` feature). Nothing in this repository can drop
+    # it short of dropping the CEL tests. Revisit when kube-cel (or cel)
+    # drops chrono; tracked in
     # https://github.com/jabbas/generated-secrets-operator/issues/48.
     { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained (informational, no vulnerability); only a dev-dependency via kube (feature cel) -> kube-core -> kube-cel -> cel for the CEL rule tests, not in the operator binary; kube-cel depends on chrono directly and on cel with default features, so nothing here can drop it; revisit when kube-cel or cel drops chrono, see issue 48" },
 ]

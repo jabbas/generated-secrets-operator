@@ -155,7 +155,7 @@ jobs:
       # commit and were checked by CI.
       - uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21 # v2.90.4
         with:
-          tool: cargo-deny@0.20.2,cargo-audit@0.23.0
+          tool: cargo-deny@0.22.0,cargo-audit@0.23.0
       - run: cargo deny check advisories
       - run: cargo audit
       # Fail-closed: the tagged commit must have a successful ci.yml run from

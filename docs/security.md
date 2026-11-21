@@ -23,9 +23,10 @@ the Secrets they live in.
   restart, upgrade, cache loss, leader change or re-apply of an identical
   manifest. A golden test pins the fingerprint format.
 - **The operator being talked into touching a Secret it did not create.** It
-  writes only Secrets that carry its `managed-by` and `owner-name` labels (or that
-  do not exist). Any other Secret with the target name yields a `Conflict` and is
-  left alone, never adopted.
+  writes only Secrets that carry its `app.kubernetes.io/managed-by` and
+  `generatedsecrets.jabbas.eu/owner-name` labels (or that do not exist). Any
+  other Secret with the target name yields a `Conflict` and is left alone, never
+  adopted.
 - **Privilege escalation through the `GeneratedSecret` API.** Anyone who may create
   `GeneratedSecret`s can make the operator create Secrets in that namespace, so
   `secret.type` is limited to `Opaque`, `kubernetes.io/basic-auth`,
@@ -148,13 +149,14 @@ The only place a value is written is the Secret itself.
 
 When a `GeneratedSecret` is created and a Secret with its name already exists,
 the operator **adopts** it only if the Secret carries the operator's labels
-(`app.kubernetes.io/managed-by: generated-secrets-operator` and an `owner-name`
-equal to the `GeneratedSecret`'s name) and has no live controller owner. It then
-keeps every value whose stored fingerprint matches, regenerates the rest, sets
-the owner reference according to `deletionPolicy`, records the new `owner-uid`
-and emits an `Adopted` Event. This is how a `Retain`ed credential survives an
-uninstall and a reinstall. A Secret that is still owned by a *deleted* `GeneratedSecret` is not
-adopted until garbage collection has removed that owner
+(`app.kubernetes.io/managed-by: generated-secrets-operator` and a
+`generatedsecrets.jabbas.eu/owner-name` equal to the `GeneratedSecret`'s name)
+and has no live controller owner. It then keeps every value whose stored
+fingerprint matches, regenerates the rest, sets the owner reference according to
+`deletionPolicy`, records the new `generatedsecrets.jabbas.eu/owner-uid` and
+emits an `Adopted` Event. This is how a `Retain`ed credential survives an
+uninstall and a reinstall. A Secret that is still owned by a *deleted*
+`GeneratedSecret` is not adopted until garbage collection has removed that owner
 (`WaitingForGarbageCollection`).
 
 Adoption is decided by labels. Anyone who can create Secrets in a namespace could
@@ -196,14 +198,16 @@ that `chrono` is **unmaintained** (all versions are affected, there is no patche
 release, and its maintainer recommends `jiff`). It is informational; no
 vulnerability is reported. The operator has `chrono` only as a **dev-dependency**:
 the `cel` feature of `kube`, enabled for `generated-secrets-api`, pulls
-`kube-core` → `kube-cel` → `cel` → `chrono`, and the tests use it to evaluate the
-CRD's CEL rules client-side. The operator binary does not contain it (its normal
-and build dependency graph has no `kube-cel`), so nothing running in your cluster
-is affected. The feature cannot be switched off from this repository, because
-`cel` enables `chrono` by default and `kube-cel` depends on `cel` with default
-features. The ignore is removed when `kube-cel` (or `cel`) drops `chrono`; it is
-tracked in the issue "Remove the RUSTSEC-2026-0543 ignore when chrono leaves the
-dependency tree".
+`kube-core` → `kube-cel` → `cel` → `chrono` (`kube-cel` also depends on `chrono`
+directly), and the tests use it to evaluate the CRD's CEL rules client-side. The
+operator binary does not contain it (its normal and build dependency graph has no
+`kube-cel`), so nothing running in your cluster is affected. Nothing in this
+repository can drop it short of dropping the CEL tests: the `cel` feature of
+`kube-core` enables the `validation` feature of `kube-cel`, which brings in
+`chrono`, and `kube-cel` takes `cel` with its default features, which include
+`chrono` as well. The ignore is removed when
+`kube-cel` (or `cel`) drops `chrono`; it is tracked in
+[#48](https://github.com/jabbas/generated-secrets-operator/issues/48).
 
 ## Release signing and SBOM
 

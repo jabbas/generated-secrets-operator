@@ -17,8 +17,12 @@ ignore = [
     # observer during generation. Revisit when a stable ssh-key 0.7 ships.
     "RUSTSEC-2026-0387",
     # `chrono` is unmaintained (informational, not a vulnerability). Only a
-    # dev-dependency through `kube/cel` -> kube-cel -> cel, for the CEL rule
-    # tests; not in the operator binary. Revisit when kube-cel or cel drops
-    # chrono (issue 48; see deny.toml).
+    # dev-dependency through kube (feature "cel") -> kube-core -> kube-cel ->
+    # cel -> chrono, for the CEL rule tests; not in the operator binary.
+    # kube-cel also depends on chrono directly (its `validation` feature,
+    # which kube-core's `cel` feature enables), and takes `cel` with default
+    # features (cel's default `chrono` feature), so nothing in this
+    # repository can drop it short of dropping the CEL tests. Revisit when
+    # kube-cel or cel drops chrono (issue 48; see deny.toml).
     "RUSTSEC-2026-0543",
 ]

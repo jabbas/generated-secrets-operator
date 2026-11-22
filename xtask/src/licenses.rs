@@ -418,8 +418,7 @@ fn check_coverage(expression: &str, files: &[LicenseFile]) -> Result<(), String>
         let name = file
             .rel
             .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
+            .map_or_default(|n| n.to_string_lossy().into_owned());
         candidates.push(Candidate::new(&name, &content));
     }
     let has = |hints: &Hints| candidates.iter().any(|c| c.matches(hints));

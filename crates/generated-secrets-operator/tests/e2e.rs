@@ -608,8 +608,7 @@ async fn e2e_install_restricted_namespace() {
         .status
         .as_ref()
         .and_then(|s| s.container_statuses.as_ref())
-        .map(|statuses| statuses.iter().map(|s| s.restart_count).sum())
-        .unwrap_or_default();
+        .map_or_default(|statuses| statuses.iter().map(|s| s.restart_count).sum());
     assert_eq!(restarts, 0, "operator container restarted");
 }
 

@@ -985,7 +985,7 @@ dependencies = [
 
 [[package]]
 name = "generated-secrets-api"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "k8s-openapi",
  "kube",
@@ -999,7 +999,7 @@ dependencies = [
 
 [[package]]
 name = "generated-secrets-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bcrypt",
  "data-encoding",
@@ -1020,7 +1020,7 @@ dependencies = [
 
 [[package]]
 name = "generated-secrets-operator"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -3524,7 +3524,7 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "xtask"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "generated-secrets-api",
  "k8s-openapi",

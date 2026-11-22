@@ -13,7 +13,7 @@ Include the version, a description and, if possible, a way to reproduce the prob
 
 ## Supported versions
 
-Only the latest minor release receives security fixes. Once `0.2.0` is released, that is the `0.2.x` series.
+Only the latest minor release series receives security fixes (currently `0.2.x`).
 
 ## More information
 

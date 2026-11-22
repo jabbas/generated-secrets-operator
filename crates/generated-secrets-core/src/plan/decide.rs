@@ -306,8 +306,7 @@ impl<'a> Decider<'a> {
             unknown: self
                 .inv
                 .and_then(|inv| inv.fingerprints.as_ref())
-                .map(|parsed| parsed.map.unknown.clone())
-                .unwrap_or_default(),
+                .map_or_default(|parsed| parsed.map.unknown.clone()),
         };
         decision
     }

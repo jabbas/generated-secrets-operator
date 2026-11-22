@@ -65,9 +65,7 @@ pub fn inventory(secret: &Secret) -> Inventory {
 
     let fingerprints = annotation(ANNOTATION_FINGERPRINTS)
         .and_then(|text| FingerprintMap::from_annotation(text).ok());
-    let keys = annotation(ANNOTATION_KEYS)
-        .map(KeyMap::from_annotation)
-        .unwrap_or_default();
+    let keys = annotation(ANNOTATION_KEYS).map_or_default(KeyMap::from_annotation);
     let generated_at = annotation(ANNOTATION_GENERATED_AT).map_or(Anchor::Absent, |text| {
         Timestamp::from_str(text).map_or(Anchor::Invalid, Anchor::At)
     });

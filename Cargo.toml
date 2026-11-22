@@ -13,7 +13,7 @@ repository = "https://github.com/jabbas/generated-secrets-operator"
 # Cargo.lock inside this floor: a dependency that needs a newer Rust than this
 # stays held back. This value and the toolchain pin therefore move together
 # (Renovate bumps both in one pull request).
-rust-version = "1.99"
+rust-version = "1.100"
 
 [workspace.dependencies]
 kube = { version = "5.0", default-features = false, features = ["derive"] }

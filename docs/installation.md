@@ -25,7 +25,7 @@ where you can browse its versions, values and README.
 
 Release tags follow [semver](https://semver.org) exactly, without a `v` prefix:
 the git tag, the chart version, the chart `appVersion` and the image tag are the
-same string (`0.2.0`, `0.2.0-rc.1`, …). The container image is
+same string (`0.2.1`, `0.2.1-rc.1`, …). The container image is
 `ghcr.io/jabbas/generated-secrets-operator:<tag>`, built for `linux/amd64` and
 `linux/arm64`. From `0.1.2` it is built `FROM scratch` (the static binary and
 `/licenses/`, no shell; use `kubectl debug` for an ephemeral debug container,
@@ -76,17 +76,17 @@ Releases are signed with cosign keyless signing (GitHub OIDC). The certificate
 identity is the release workflow run for the tag, so the commands below verify
 that the image and the chart were built by this repository's release workflow
 for exactly that tag. Set `TAG` to the release you are installing and
-`CHART_VERSION` to its chart version. For the current release, `0.2.0`:
+`CHART_VERSION` to its chart version. For the current release, `0.2.1`:
 
 ```sh
-TAG=0.2.0                  # the git/image tag (plain semver)
-CHART_VERSION=0.2.0        # the chart version
+TAG=0.2.1                  # the git/image tag (plain semver)
+CHART_VERSION=0.2.1        # the chart version
 IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 ```
 
 From 0.1.1 on, the tag is the plain version and equals the chart version
-(`0.2.0-rc.1` for a release candidate). For the legacy `0.1.0` use
+(`0.2.1-rc.1` for a release candidate). For the legacy `0.1.0` use
 `TAG=v0.1.0` and `CHART_VERSION=0.1.0`.
 
 Verify the image:
@@ -138,7 +138,7 @@ Cluster mode, a single replica:
 ```sh
 helm install generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace
 ```
 
@@ -148,7 +148,7 @@ For a highly available deployment, run two replicas; they use leader election
 ```sh
 helm install generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace \
   --set replicas=2
 ```
@@ -181,7 +181,7 @@ namespace first if you want `restricted` enforcement (see
 helm repo add jabbas https://jabbas.github.io/helm-charts
 helm repo update
 helm install generated-secrets-operator jabbas/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace
 ```
 
@@ -190,7 +190,7 @@ other section of this page applies unchanged (use `jabbas/generated-secrets-oper
 wherever an example says `oci://ghcr.io/jabbas/charts/generated-secrets-operator`).
 Release candidates are listed too, but Helm hides pre-releases unless you ask:
 `helm search repo jabbas/generated-secrets-operator --devel --versions`, or install
-with an explicit `--version 0.2.0-rc.1`.
+with an explicit `--version 0.2.1-rc.1`.
 
 ### What is and is not verified
 
@@ -212,7 +212,7 @@ yourself. The three digests must be identical:
 2. the SHA-256 of the package you downloaded,
 3. the `digest` of the entry in `index.yaml`.
 
-Copy-pasteable for `0.2.0`. For another release set `TAG` and `CHART_VERSION`
+Copy-pasteable for `0.2.1`. For another release set `TAG` and `CHART_VERSION`
 both to the plain version (for the legacy `0.1.0`: `TAG=v0.1.0`,
 `CHART_VERSION=0.1.0`, signing identity `refs/tags/v0.1.0`). It needs `cosign`,
 `crane`, `jq`, `yq`, `helm` and `sha256sum` (`shasum -a 256` where `sha256sum`
@@ -223,8 +223,8 @@ close your terminal:
 ```sh
 (
 set -euo pipefail
-TAG=0.2.0                  # the git tag (plain semver)
-CHART_VERSION=0.2.0        # the chart version
+TAG=0.2.1                  # the git tag (plain semver)
+CHART_VERSION=0.2.1        # the chart version
 IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 
@@ -261,7 +261,7 @@ The commands assume you ran `helm repo add jabbas …` above. A failing command
 status and an error: do not install, and please
 [report it](security.md#reporting-a-vulnerability). To install exactly the
 package you verified, use the file `helm pull` left in the current directory
-(`helm install … ./generated-secrets-operator-0.2.0.tgz`).
+(`helm install … ./generated-secrets-operator-0.2.1.tgz`).
 
 ### Flux
 
@@ -292,7 +292,7 @@ spec:
   chart:
     spec:
       chart: generated-secrets-operator
-      version: "0.2.0"          # pin an exact version
+      version: "0.2.1"          # pin an exact version
       sourceRef:
         kind: HelmRepository
         name: jabbas
@@ -302,7 +302,7 @@ spec:
 ```
 
 A semver range such as `">=0.2.0"` skips release candidates; to follow them,
-write the range with a pre-release part (`">=0.2.0-0"`).
+write the range with a pre-release part (`">=0.2.1-0"`).
 
 **For signature checking in Flux, use the OCI channel with `verify`.** An
 `OCIRepository` verifies the cosign signature of the chart before Flux
@@ -318,7 +318,7 @@ spec:
   interval: 1h
   url: oci://ghcr.io/jabbas/charts/generated-secrets-operator
   ref:
-    tag: "0.2.0"
+    tag: "0.2.1"
   # The Helm chart layer, passed on as the chart (needs Flux 2.3 or newer).
   layerSelector:
     mediaType: "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
@@ -328,7 +328,7 @@ spec:
     matchOIDCIdentity:
       - issuer: "^https://token\\.actions\\.githubusercontent\\.com$"
         # 0.1.0 used the legacy tag v0.1.0; later releases are signed as refs/tags/<version>.
-        subject: "^https://github\\.com/jabbas/generated-secrets-operator/\\.github/workflows/release\\.yml@refs/tags/0\\.2\\.0$"
+        subject: "^https://github\\.com/jabbas/generated-secrets-operator/\\.github/workflows/release\\.yml@refs/tags/0\\.2\\.1$"
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -363,7 +363,7 @@ CEL validation still apply to every namespace.
 ```sh
 helm install generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace \
   --set 'watchNamespaces={team-a,team-b}'
 ```
@@ -432,7 +432,7 @@ The image reference is built as follows:
 ```sh
 helm install generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace \
   --set global.imageRegistry=mirror.example.com \
   --set 'imagePullSecrets[0].name=mirror-pull'
@@ -449,7 +449,7 @@ image:
 ```sh
 helm upgrade generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system \
   --reuse-values \
   --set image.digest=sha256:<64-hex-digest-from-cosign-verify>
@@ -485,7 +485,7 @@ A CRD is cluster-wide, so exactly one Helm release may own it.
   ```sh
   helm install generated-secrets-operator-b \
     oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-    --version 0.2.0 \
+    --version 0.2.1 \
     --namespace generated-secrets-b --create-namespace \
     --set crds.install=false \
     --set 'watchNamespaces={team-b}'
@@ -526,7 +526,7 @@ back, repeat the upgrade with `--force-conflicts`:
 ```sh
 helm upgrade generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system \
   --reuse-values \
   --force-conflicts
@@ -542,7 +542,7 @@ this failure mode, but the chart is not tested with Helm 3.
 ```sh
 helm upgrade generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system \
   --reuse-values
 ```

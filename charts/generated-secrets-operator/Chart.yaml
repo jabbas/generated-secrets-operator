@@ -5,8 +5,8 @@ description: Kubernetes operator that generates and rotates Secrets from Generat
 type: application
 # Chart version = app version = image tag = git release tag (plain semver).
 # The only exception is 0.1.0, released under the legacy tag `v0.1.0`.
-version: 0.2.0
-appVersion: "0.2.0"
+version: 0.2.1
+appVersion: "0.2.1"
 home: https://github.com/jabbas/generated-secrets-operator
 sources:
   - https://github.com/jabbas/generated-secrets-operator
@@ -44,7 +44,7 @@ annotations:
   # (docs/development.md, "Bump the versions"). `cargo xtask chart-test` checks it.
   artifacthub.io/images: |
     - name: generated-secrets-operator
-      image: ghcr.io/jabbas/generated-secrets-operator:0.2.0
+      image: ghcr.io/jabbas/generated-secrets-operator:0.2.1
       platforms:
         - linux/amd64
         - linux/arm64

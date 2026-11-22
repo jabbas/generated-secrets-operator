@@ -333,17 +333,17 @@ also on a release candidate (`revision` is the commit); releases up to 0.1.3
 label a candidate with its own tag.
 
 Set the variables for the release you are installing. For the current release,
-`0.2.0`:
+`0.2.1`:
 
 ```sh
-TAG=0.2.0                  # the git/image tag (plain semver)
-CHART_VERSION=0.2.0        # the chart version
+TAG=0.2.1                  # the git/image tag (plain semver)
+CHART_VERSION=0.2.1        # the chart version
 IDENTITY="https://github.com/jabbas/generated-secrets-operator/.github/workflows/release.yml@refs/tags/${TAG}"
 ISSUER="https://token.actions.githubusercontent.com"
 ```
 
 From 0.1.1 on, `<tag>` is the plain version and equals the chart version
-(`0.2.0-rc.1` for a release candidate). For the legacy `0.1.0` use
+(`0.2.1-rc.1` for a release candidate). For the legacy `0.1.0` use
 `TAG=v0.1.0` and `CHART_VERSION=0.1.0`.
 
 Verify the image (the tag resolves to the multi-arch index, which is signed):

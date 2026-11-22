@@ -11,7 +11,7 @@ ServiceMonitor.
 ```sh
 helm install generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace
 ```
 
@@ -21,7 +21,7 @@ cluster-wide RBAC except the CRD):
 ```sh
 helm install generated-secrets-operator \
   oci://ghcr.io/jabbas/charts/generated-secrets-operator \
-  --version 0.2.0 \
+  --version 0.2.1 \
   --namespace generated-secrets-system --create-namespace \
   --set 'watchNamespaces={team-a,team-b}'
 ```

@@ -150,6 +150,12 @@
       "allowedVersions": "<0.4"
     },
     {
+      "description": "Hold jiff below 1.0 until k8s-openapi and kube use jiff 1 (see #56)",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["jiff"],
+      "allowedVersions": "<1"
+    },
+    {
       "description": "GitHub Actions: group minor and patch updates (SHA pins and the version comments are kept)",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "digest", "pin", "pinDigest"],

@@ -301,7 +301,7 @@ spec:
   #   replicas: 2
 ```
 
-A semver range such as `">=0.2.0"` skips release candidates; to follow them,
+A semver range such as `">=0.2.1"` skips release candidates; to follow them,
 write the range with a pre-release part (`">=0.2.1-0"`).
 
 **For signature checking in Flux, use the OCI channel with `verify`.** An

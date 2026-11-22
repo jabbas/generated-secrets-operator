@@ -11,18 +11,28 @@ the CRD, the chart templates or the operator's behaviour.
 
 ### Changed
 
-- The Rust toolchain and the minimum supported Rust version are 1.100
-  (1.99 before).
-- Dependencies updated. `jiff` 0.2.46 fixes an unsound API in its `jiff-core`
-  crate (`jiff_core::util::ArrayStr`); `zeroize` 1.9.2, `clap` 4.6.9, and a
-  lock file maintenance (including `regex`, `url`, `uuid`, `smallvec` and
+- **Rust 1.100:** the toolchain and the minimum supported Rust version are 1.100
+  (1.99 before). The source was adapted to a new clippy lint of this version
+  (`map_or_default`) without any change in behaviour.
+- **Dependencies updated:** `jiff` 0.2.46 fixes an unsound API in its
+  `jiff-core` crate (`jiff_core::util::ArrayStr`); `zeroize` 1.9.2, `clap` 4.6.9,
+  and a lock file maintenance (including `regex`, `url`, `uuid`, `smallvec` and
   `pin-project`). Renovate holds `jiff` below 1.0 until kube moves to jiff 1.
-- Release tooling updated: `cargo-deny` 0.22.0, `syft` 1.57.2, `grype` 0.122.1,
-  BuildKit 0.35.1, and the GitHub Actions of the workflows; every pinned tool
-  keeps its SHA-256. `oras` 1.4.0 and `actionlint` 1.7.12 are new pinned tools
-  (the Artifact Hub metadata workflow and the workflow linter).
-- Pull-request CI skips changes limited to `site/`, `demo/` and `docs/assets/`;
-  every push to `main` still runs all jobs, as the release gate requires.
+- **Release tooling updated:** `cargo-deny` 0.22.0, `syft` 1.57.2, `grype`
+  0.122.1, BuildKit 0.35.1, and the GitHub Actions of the workflows; every
+  pinned tool keeps its SHA-256. `oras` 1.4.0 and `actionlint` 1.7.12 are new
+  pinned tools (the Artifact Hub metadata workflow and the workflow linter).
+- **Pull-request CI** skips changes limited to `site/`, `demo/` and
+  `docs/assets/`; every push to `main` still runs all jobs, as the release gate
+  requires.
+- **Documentation:** contributions from outside contributors (`CONTRIBUTING.md`,
+  `SECURITY.md`, issue forms, the full label and annotation names in
+  `docs/security.md`, the complete `oras` command in the digest-chain recipe);
+  the README is rewritten as the project's landing page, with a demo recording
+  made on 0.2.0; the project website is published with GitHub Pages; the chart
+  is listed on Artifact Hub, and its repository metadata is published by a
+  workflow (`artifacthub-metadata.yml`); the 0.2.0 home-lab test report; the
+  examples name 0.2.1.
 
 ### Security
 
@@ -30,17 +40,6 @@ the CRD, the chart templates or the operator's behaviour.
   vulnerability) with a justification: `chrono` is reached only through the
   `kube/cel` dev-dependency used by the CEL rule tests, never in the operator
   binary. See [Security](docs/security.md).
-
-### Documentation
-
-- Contributions from outside contributors: `CONTRIBUTING.md`, `SECURITY.md`,
-  issue forms, the full label and annotation names in `docs/security.md`, and
-  the complete `oras` command in the digest-chain recipe.
-- The README is rewritten as the project's landing page, with a demo recording
-  made on 0.2.0; the project website is published with GitHub Pages.
-- The chart is listed on Artifact Hub; its repository metadata is published by
-  a workflow (`artifacthub-metadata.yml`).
-- The 0.2.0 home-lab test report; the examples name 0.2.1.
 
 ## 0.2.0 - 2026-11-15
 

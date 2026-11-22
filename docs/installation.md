@@ -107,17 +107,19 @@ platform (`amd64` or `arm64`) in the index:
 
 ```sh
 ARCH=amd64   # or arm64
+
+# With Docker:
 PLATFORM_DIGEST="$(docker buildx imagetools inspect "ghcr.io/jabbas/generated-secrets-operator:${TAG}" --raw \
   | jq -r --arg arch "${ARCH}" '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest')"
+
+# Or with crane (no Docker required):
+PLATFORM_DIGEST="$(crane digest "ghcr.io/jabbas/generated-secrets-operator:${TAG}" --platform "linux/${ARCH}")"
 
 cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_DIGEST}" \
   --type spdxjson \
   --certificate-identity "${IDENTITY}" \
   --certificate-oidc-issuer "${ISSUER}"
 ```
-
-(`crane manifest "ghcr.io/jabbas/generated-secrets-operator:${TAG}"` prints the same
-index if you do not have Docker.)
 
 A failed verification prints an error and exits non-zero; do not install. The
 output of a successful `cosign verify` contains the digest of the multi-arch

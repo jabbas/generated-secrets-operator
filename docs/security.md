@@ -351,8 +351,13 @@ the attestation of that digest:
 
 ```sh
 ARCH=amd64   # or arm64
+
+# With Docker:
 PLATFORM_DIGEST="$(docker buildx imagetools inspect "ghcr.io/jabbas/generated-secrets-operator:${TAG}" --raw \
   | jq -r --arg arch "${ARCH}" '.manifests[] | select(.platform.os == "linux" and .platform.architecture == $arch) | .digest')"
+
+# Or with crane (no Docker required):
+PLATFORM_DIGEST="$(crane digest "ghcr.io/jabbas/generated-secrets-operator:${TAG}" --platform "linux/${ARCH}")"
 
 cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_DIGEST}" \
   --type spdxjson \
@@ -360,8 +365,7 @@ cosign verify-attestation "ghcr.io/jabbas/generated-secrets-operator@${PLATFORM_
   --certificate-oidc-issuer "${ISSUER}"
 ```
 
-(`crane manifest "ghcr.io/jabbas/generated-secrets-operator:${TAG}"` prints the same
-index if you do not have Docker.) The attestation output is a stream of signed
+The attestation output is a stream of signed
 envelopes whose `payload` is the base64-encoded in-toto statement; to read the
 SBOM itself:
 

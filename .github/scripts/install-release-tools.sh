@@ -27,11 +27,11 @@ set -euo pipefail
 
 # renovate: datasource=github-releases depName=anchore/syft extractVersion=^v(?<version>.+)$
 SYFT_VERSION=1.57.2
-SYFT_SHA256=bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c
+SYFT_SHA256=ad92bd3ec1b94a3df01d4d0aec199afa9c42b72e86da436ff5f837914d32706b
 
 # renovate: datasource=github-releases depName=anchore/grype extractVersion=^v(?<version>.+)$
 GRYPE_VERSION=0.122.1
-GRYPE_SHA256=e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85
+GRYPE_SHA256=f1ba7e2917ee1395618de20a98da0aa7c0fb1788927797651047c50502a37538
 
 # renovate: datasource=github-releases depName=google/go-containerregistry extractVersion=^v(?<version>.+)$
 CRANE_VERSION=0.22.1
@@ -39,7 +39,7 @@ CRANE_SHA256=0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0
 
 # renovate: datasource=github-releases depName=oras-project/oras extractVersion=^v(?<version>.+)$
 ORAS_VERSION=1.4.0
-ORAS_SHA256=66fb0ad7206f3f6fa77ed5b552049d364ccf4b50b1684554f731f76302b52ca0
+ORAS_SHA256=d8e1dce2fd8ce996f1d901845b688eb0cf505a6082897606f053825bb47935d1
 
 # renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.+)$
 ACTIONLINT_VERSION=1.7.12
